@@ -1,0 +1,8 @@
+/bin/
+/dist/
+*.out
+*.test
+*.prof
+.DS_Store
+*.log
+.env
