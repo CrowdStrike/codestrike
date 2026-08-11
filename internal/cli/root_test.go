@@ -5,6 +5,10 @@ import "testing"
 func TestNewRootCmd_HasExpectedSubcommands(t *testing.T) {
 	root := NewRootCmd()
 
+	if !root.SilenceErrors {
+		t.Error("expected root command to leave error reporting to the caller")
+	}
+
 	want := map[string]bool{"review": true, "version": true}
 	got := map[string]bool{}
 	for _, cmd := range root.Commands() {
