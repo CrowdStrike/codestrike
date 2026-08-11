@@ -2,22 +2,23 @@ package cli
 
 import (
 	"github.com/spf13/cobra"
-)
 
-// version is set at build time via -ldflags.
-var version = "dev"
+	"github.com/CrowdStrike/codestrike/internal/version"
+)
 
 // NewRootCmd constructs the root codestrike command with all subcommands attached.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:           "codestrike",
 		Short:         "codestrike is an AI-driven pull request review tool",
-		Version:       version,
+		Version:       version.Version,
 		SilenceUsage:  true,
 		SilenceErrors: false,
 	}
+	root.SetVersionTemplate(root.Name() + " " + version.Short() + "\n")
 
 	root.AddCommand(newReviewCmd())
+	root.AddCommand(newVersionCmd())
 
 	return root
 }

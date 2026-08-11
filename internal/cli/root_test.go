@@ -5,7 +5,7 @@ import "testing"
 func TestNewRootCmd_HasExpectedSubcommands(t *testing.T) {
 	root := NewRootCmd()
 
-	want := map[string]bool{"review": true}
+	want := map[string]bool{"review": true, "version": true}
 	got := map[string]bool{}
 	for _, cmd := range root.Commands() {
 		got[cmd.Name()] = true
