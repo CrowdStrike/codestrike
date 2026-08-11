@@ -47,56 +47,14 @@ Never made an open source contribution before? Wondering how contributions work 
     - `test:` - Adding missing tests or correcting existing tests
     - `chore:` - Changes to build process, auxiliary tools, or maintenance
 
-    **Examples with Good Scoping (Recommended):**
+    **Examples:**
 
     ```bash
-    # Module changes with specific scopes (preferred)
-    git commit -m "feat(modules/cloud): add list kubernetes clusters tool"
-    git commit -m "feat(modules/hosts): add list devices tool"
-    git commit -m "fix(modules/detections): resolve authentication error"
-
-    # Resource changes
-    git commit -m "refactor(resources): reword FQL guide in cloud resource"
-    git commit -m "feat(resources): add FQL guide for hosts module"
-
-    # Documentation changes with scope
+    git commit -m "feat(cli): add dry-run support"
+    git commit -m "fix(review): validate pull request URLs"
     git commit -m "docs(contributing): update conventional commits guidance"
-    git commit -m "docs(modules): enhance module development guide"
-
-    # Infrastructure changes
-    git commit -m "feat(ci): add automated testing workflow"
-    git commit -m "chore(docker): update container configurations"
-    ```
-
-    **How Scoped Commits Improve Changelogs:**
-
-    The above commits would generate organized changelog entries like:
-
-    ```markdown
-    # Features
-    - modules/cloud: add list kubernetes clusters tool
-    - modules/hosts: add list devices tool
-    - resources: add FQL guide for hosts module
-    - ci: add automated testing workflow
-
-    # Bug Fixes
-    - modules/detections: resolve authentication error
-
-    # Refactors
-    - resources: reword FQL guide in cloud resource
-
-    # Documentation
-    - contributing: update conventional commits guidance
-    - modules: enhance module development guide
-    ```
-
-    **Basic Examples (Less Preferred but Acceptable):**
-
-    ```bash
-    # General examples without specific scopes
-    git commit -m "feat: add new functionality"
-    git commit -m "fix: resolve issue in application"
-    git commit -m "docs: update documentation"
+    git commit -m "test(cli): cover invalid arguments"
+    git commit -m "chore(ci): update Go checks"
     ```
 
     **Breaking Changes:**
@@ -116,6 +74,20 @@ Never made an open source contribution before? Wondering how contributions work 
     - **Consistent Format**: Standardizes commit messages across all contributors
 
     For more details, see the [Conventional Commits specification](https://www.conventionalcommits.org/).
+
+1. Run the same checks used by continuous integration:
+
+    ```bash
+    go mod verify
+    go mod tidy
+    gofmt -w .
+    go vet ./...
+    go test ./...
+    go build ./...
+    ```
+
+    Review changes to `go.mod` and `go.sum` after running `go mod tidy`, and
+    include them only when they are required by your contribution.
 
 1. Push your local changes back to your account on github.com:
 
