@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/rs/zerolog"
@@ -95,12 +95,8 @@ func (p *Pipeline) applyGuardrails(files []scm.PullRequestFile) []scm.PullReques
 			p.logger.Debug().Str("file", f.Filename).Msg("skipped: ignored path")
 			continue
 		}
-		if p.isIgnoredFile(f.Filename, guardrails.IgnoredFiles) {
-			p.logger.Debug().Str("file", f.Filename).Msg("skipped: ignored file pattern")
-			continue
-		}
-		if guardrails.MaxFileSize > 0 && len(f.Patch) > guardrails.MaxFileSize {
-			p.logger.Debug().Str("file", f.Filename).Msg("skipped: exceeds max file size")
+		if guardrails.MaxPatchSizeBytes > 0 && len(f.Patch) > guardrails.MaxPatchSizeBytes {
+			p.logger.Debug().Str("file", f.Filename).Msg("skipped: exceeds max patch size")
 			continue
 		}
 		if f.Status == "removed" {
@@ -115,17 +111,16 @@ func (p *Pipeline) applyGuardrails(files []scm.PullRequestFile) []scm.PullReques
 
 func (p *Pipeline) isIgnoredPath(filename string, patterns []string) bool {
 	for _, pattern := range patterns {
-		if strings.HasPrefix(filename, pattern) {
+		// Repository paths always use forward slashes. A trailing slash denotes
+		// a directory prefix, while glob patterns can target either the full
+		// path or a file name at any depth.
+		if strings.HasSuffix(pattern, "/") && strings.HasPrefix(filename, pattern) {
 			return true
 		}
-	}
-	return false
-}
-
-func (p *Pipeline) isIgnoredFile(filename string, patterns []string) bool {
-	base := filepath.Base(filename)
-	for _, pattern := range patterns {
-		if matched, _ := filepath.Match(pattern, base); matched {
+		if matched, _ := path.Match(pattern, filename); matched {
+			return true
+		}
+		if matched, _ := path.Match(pattern, path.Base(filename)); matched {
 			return true
 		}
 	}

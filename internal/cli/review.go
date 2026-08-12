@@ -23,7 +23,17 @@ func newReviewCmd() *cobra.Command {
 			envCfg := setup.LoadConfig()
 			log := logger.New(envCfg.LogLevel)
 
-			appConfig, err := config.Load("configs/codestrike.yaml")
+			configFlag, err := cmd.Flags().GetString("config")
+			if err != nil {
+				return fmt.Errorf("reading --config flag: %w", err)
+			}
+
+			configPath, err := config.ResolvePath(configFlag)
+			if err != nil {
+				return fmt.Errorf("resolving config path: %w", err)
+			}
+
+			appConfig, err := config.Load(configPath)
 			if err != nil {
 				return fmt.Errorf("loading config: %w", err)
 			}

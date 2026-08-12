@@ -1,0 +1,17 @@
+github:
+  base_url: https://api.github.com
+
+review:
+  # Values may be inline text or a file name from prompts/ and tones/.
+  system_prompt: default
+  tone: diplomatic
+  guardrails:
+    max_patch_size_bytes: 1048576
+    ignored_paths:
+      - vendor/
+      - node_modules/
+      - .git/
+      - "*.lock"
+      - "*.sum"
+      - "*.min.js"
+      - "*.min.css"

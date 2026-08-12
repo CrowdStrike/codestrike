@@ -17,7 +17,10 @@ func NewRootCmd() *cobra.Command {
 	}
 	root.SetVersionTemplate(root.Name() + " " + version.Short() + "\n")
 
+	root.PersistentFlags().String("config", "", "Path to app config file (default: OS user config dir, e.g. ~/.config/codestrike/default.yaml on Linux)")
+
 	root.AddCommand(newReviewCmd())
+	root.AddCommand(newInitCmd())
 	root.AddCommand(newVersionCmd())
 
 	return root

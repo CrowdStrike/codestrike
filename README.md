@@ -8,7 +8,7 @@ AI-driven pull request review tool using configurable LLM judges.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://go.dev/)
 
-**codestrike** is an open-source, AI-driven pull request review tool written in Go. It watches a pull request, runs an LLM-powered review over the diff, and posts the results back as a single comment. It works with any OpenAI-compatible /chat/completions endpoint, so you can point it at OpenAI, Azure OpenAI, or a self-hosted model, and lets you supply your own system prompt to tailor review behavior to your team's standards.
+**codestrike** is an open-source, AI-driven pull request review tool written in Go. Given a pull request, it runs an LLM-powered review over the diff, and posts the results back as a single comment.
 
 > [!IMPORTANT]
 > **Public Preview**: This project is currently in public preview and under active development. Features and functionality may change before the stable 1.0 release. While we encourage exploration and testing, please avoid production deployments. We welcome your feedback through [GitHub Issues](https://github.com/crowdstrike/codestrike/issues) to help shape the final release.
@@ -46,26 +46,53 @@ Required variables:
 
 ### 3. Review application config
 
-Application settings live in `configs/codestrike.yaml`. You can customize the system prompt, tone, and guardrails:
+Application settings (system prompt, tone, guardrails) are loaded from a YAML file. By default, codestrike looks for this file at the OS-specific user config directory under a `codestrike/` subdirectory:
+
+| OS | Default path |
+|----|--------------|
+| Linux | `$XDG_CONFIG_HOME/codestrike/default.yaml` (falls back to `~/.config/codestrike/default.yaml`) |
+| macOS | `~/Library/Application Support/codestrike/default.yaml` |
+| Windows | `%AppData%\codestrike\default.yaml` |
+
+Install the default configuration, prompts, and tones from the files embedded
+in the binary:
+
+```bash
+codestrike init
+```
+
+Existing files are preserved. To overwrite the bundled files with the versions
+from the current binary:
+
+```bash
+codestrike init --force
+```
+
+If no file exists at the default path, codestrike exits with an error explaining
+the path it looked for. Use `--config <path>` to point at a config file anywhere
+else instead.
+
+You can customize the system prompt, tone, and guardrails:
 
 ```yaml
 github:
   base_url: https://api.github.com
 
 review:
-  system_prompt: |
-    You are a senior software engineer performing a code review.
-    ...
-  tone: constructive
+  # Use inline text, or a file name from prompts/ or tones/ next to this file.
+  system_prompt: default
+  tone: diplomatic
   guardrails:
-    max_file_size: 1048576
+    max_patch_size_bytes: 1048576
     ignored_paths:
       - vendor/
       - node_modules/
-    ignored_files:
       - "*.lock"
       - "*.min.js"
 ```
+
+`ignored_paths` accepts directory prefixes and glob patterns. Globs are matched
+against both complete repository paths and file names at any depth.
 
 ### 4. Build
 
@@ -77,6 +104,12 @@ go build -o codestrike ./cmd/codestrike
 
 ```bash
 ./codestrike review https://github.com/{owner}/{repo}/pull/{number}
+```
+
+Or point at a specific config file with `--config`:
+
+```bash
+./codestrike review --config /path/to/default.yaml https://github.com/{owner}/{repo}/pull/{number}
 ```
 
 ## Running Tests
