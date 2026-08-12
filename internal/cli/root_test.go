@@ -1,12 +1,15 @@
 package cli
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func TestNewRootCmd_HasExpectedSubcommands(t *testing.T) {
 	root := NewRootCmd()
 
-	if !root.SilenceErrors {
-		t.Error("expected root command to leave error reporting to the caller")
+	if root.SilenceErrors {
+		t.Error("expected root command to report errors")
 	}
 
 	want := map[string]bool{"review": true, "version": true}
@@ -26,10 +29,14 @@ func TestReviewCmd_RequiresExactlyOneArg(t *testing.T) {
 	root := NewRootCmd()
 	root.SetArgs([]string{"review"})
 	root.SetOut(nilWriter{})
-	root.SetErr(nilWriter{})
+	var stderr bytes.Buffer
+	root.SetErr(&stderr)
 
 	if err := root.Execute(); err == nil {
 		t.Error("expected error when review is called without a PR URL, got nil")
+	}
+	if stderr.Len() == 0 {
+		t.Errorf("expected command to print returned error")
 	}
 }
 

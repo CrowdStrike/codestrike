@@ -13,7 +13,7 @@ func NewRootCmd() *cobra.Command {
 		Short:         "codestrike is an AI-driven pull request review tool",
 		Version:       version.Version,
 		SilenceUsage:  true,
-		SilenceErrors: true,
+		SilenceErrors: false,
 	}
 	root.SetVersionTemplate(root.Name() + " " + version.Short() + "\n")
 
