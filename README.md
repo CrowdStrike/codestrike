@@ -72,7 +72,8 @@ If no file exists at the default path, codestrike exits with an error explaining
 the path it looked for. Use `--config <path>` to point at a config file anywhere
 else instead.
 
-You can customize the system prompt, tone, and guardrails:
+You can customize the system prompt, tone, guardrails, context files, and token
+budget:
 
 ```yaml
 github:
@@ -82,17 +83,39 @@ review:
   # Use inline text, or a file name from prompts/ or tones/ next to this file.
   system_prompt: default
   tone: diplomatic
+  context_files:
+    - CLAUDE.md
   guardrails:
     max_patch_size_bytes: 1048576
     ignored_paths:
       - vendor/
       - node_modules/
+      - .git/
       - "*.lock"
+      - "*.sum"
       - "*.min.js"
+      - "*.min.css"
+  context:
+    max_input_ratio: 0.75
+    reserved_output_tokens: 4096
+    tokenizer_model: o200k_base
+    model_limits:
+      gpt-4o:
+        context_window: 128000
+        max_output_tokens: 16384
+      claude-sonnet-4-20250514:
+        context_window: 200000
+        max_output_tokens: 8192
 ```
 
-`ignored_paths` accepts directory prefixes and glob patterns. Globs are matched
-against both complete repository paths and file names at any depth.
+| Section | Description |
+|---------|-------------|
+| `context_files` | Project files (e.g., `CLAUDE.md`) loaded as additional context for the reviewer |
+| `ignored_paths` | Directory prefixes and glob patterns. Globs are matched against both complete repository paths and file names at any depth |
+| `context.max_input_ratio` | Maximum fraction of the model's context window used for input (default: `0.75`) |
+| `context.reserved_output_tokens` | Tokens reserved for the model's response (default: `4096`) |
+| `context.tokenizer_model` | Tiktoken encoding used for token counting (default: `o200k_base`) |
+| `context.model_limits` | Per-model context window and max output token settings |
 
 ### 4. Build
 

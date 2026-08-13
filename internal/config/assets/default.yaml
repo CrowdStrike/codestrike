@@ -5,6 +5,8 @@ review:
   # Values may be inline text or a file name from prompts/ and tones/.
   system_prompt: default
   tone: diplomatic
+  context_files:
+    - CLAUDE.md
   guardrails:
     max_patch_size_bytes: 1048576
     ignored_paths:
@@ -15,3 +17,14 @@ review:
       - "*.sum"
       - "*.min.js"
       - "*.min.css"
+  context:
+    max_input_ratio: 0.75
+    reserved_output_tokens: 4096
+    tokenizer_model: o200k_base
+    model_limits:
+      gpt-4o:
+        context_window: 128000
+        max_output_tokens: 16384
+      claude-sonnet-4-20250514:
+        context_window: 200000
+        max_output_tokens: 8192

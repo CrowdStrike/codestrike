@@ -4,28 +4,34 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/rs/zerolog"
 
+	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 	"github.com/CrowdStrike/codestrike/internal/config"
 	"github.com/CrowdStrike/codestrike/internal/llm"
 	"github.com/CrowdStrike/codestrike/internal/scm"
+	"github.com/CrowdStrike/codestrike/internal/tokenizer"
 )
 
 type Pipeline struct {
 	client    scm.Client
 	llmClient llm.LLMClient
 	config    *config.Config
+	tokenizer tokenizer.Tokenizer
 	logger    *zerolog.Logger
 }
 
-func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, logger *zerolog.Logger) *Pipeline {
+func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, tok tokenizer.Tokenizer, logger *zerolog.Logger) *Pipeline {
 	return &Pipeline{
 		client:    client,
 		llmClient: llmClient,
 		config:    cfg,
+		tokenizer: tok,
 		logger:    logger,
 	}
 }
@@ -41,7 +47,7 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	}
 	p.logger.Info().Int("pr", ref.Number).Msg("pull request found")
 
-	// Step 2: Fetch PR files (diff + content)
+	// Step 2: Fetch PR files
 	files, err := p.client.GetPullRequestFiles(ctx, ref.Number)
 	if err != nil {
 		return fmt.Errorf("fetching PR files: %w", err)
@@ -57,12 +63,33 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 		return nil
 	}
 
-	// Step 4: Build prompt
-	prompt := p.buildPrompt(filtered)
-	p.logger.Debug().Int("prompt_length", len(prompt)).Msg("prompt built")
+	// Step 4: Build context-aware prompts
+	budget := p.createBudget()
+	builder := appcontext.NewBuilder(p.tokenizer, budget, p.config)
 
-	// Step 5: Inference
-	comments, err := p.runInference(ctx, prompt)
+	// Load project context files (CLAUDE.md, etc.)
+	projectContext := p.loadContextFiles()
+
+	// Fetch existing comments for dedup
+	existingComments := p.fetchExistingCommentsContext(ctx, ref.Number)
+
+	// Memory context (deferred — not yet implemented)
+	memoryContext := ""
+
+	result := builder.Build(filtered, existingComments, memoryContext, projectContext)
+	p.logger.Info().
+		Int("total_tokens", result.TotalTokens).
+		Int("skipped_files", len(result.SkippedFiles)).
+		Msg("context built")
+
+	if len(result.SkippedFiles) > 0 {
+		p.logger.Warn().
+			Strs("files", result.SkippedFiles).
+			Msg("files skipped due to context budget")
+	}
+
+	// Step 5: Run inference
+	comments, err := p.runInference(ctx, result.Prompt, result.OutputMaxToken)
 	if err != nil {
 		return fmt.Errorf("running inference: %w", err)
 	}
@@ -85,6 +112,52 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 
 	return nil
 }
+
+func (p *Pipeline) createBudget() *appcontext.Budget {
+	ctxCfg := p.config.Review.Context
+	contextWindow := 128000
+	reservedOutput := 4096
+	maxInputRatio := 0.75
+
+	if ctxCfg.ReservedOutputTokens > 0 {
+		reservedOutput = ctxCfg.ReservedOutputTokens
+	}
+	if ctxCfg.MaxInputRatio > 0 {
+		maxInputRatio = ctxCfg.MaxInputRatio
+	}
+
+	return appcontext.NewBudget(p.tokenizer, contextWindow, maxInputRatio, reservedOutput)
+}
+
+func (p *Pipeline) runInference(ctx context.Context, prompt string, maxTokens int) ([]scm.ReviewComment, error) {
+	resp, err := p.llmClient.InvokeModelWithRetry(ctx, llm.LLMRequest{
+		Prompt:      prompt,
+		MaxTokens:   maxTokens,
+		Temperature: 0.2,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("LLM invocation failed: %w", err)
+	}
+
+	return parseResponse(resp.Content)
+}
+
+func parseResponse(content string) ([]scm.ReviewComment, error) {
+	content = strings.TrimSpace(content)
+	content = strings.TrimPrefix(content, "```json")
+	content = strings.TrimPrefix(content, "```")
+	content = strings.TrimSuffix(content, "```")
+	content = strings.TrimSpace(content)
+
+	var comments []scm.ReviewComment
+	if err := json.Unmarshal([]byte(content), &comments); err != nil {
+		return nil, fmt.Errorf("failed to parse LLM response as JSON: %w", err)
+	}
+
+	return comments, nil
+}
+
+
 
 func (p *Pipeline) applyGuardrails(files []scm.PullRequestFile) []scm.PullRequestFile {
 	guardrails := p.config.Review.Guardrails
@@ -127,48 +200,6 @@ func (p *Pipeline) isIgnoredPath(filename string, patterns []string) bool {
 	return false
 }
 
-func (p *Pipeline) buildPrompt(files []scm.PullRequestFile) string {
-	var sb strings.Builder
-
-	sb.WriteString(p.config.Review.SystemPrompt)
-	sb.WriteString("\n\n")
-	fmt.Fprintf(&sb, "Tone: %s\n\n", p.config.Review.Tone)
-	sb.WriteString("Review the following changes and provide feedback as JSON array.\n")
-	sb.WriteString("Each item must have: {\"file\": \"<path>\", \"line\": <number>, \"body\": \"<comment>\"}\n\n")
-
-	for _, f := range files {
-		fmt.Fprintf(&sb, "--- File: %s (status: %s) ---\n", f.Filename, f.Status)
-		sb.WriteString(f.Patch)
-		sb.WriteString("\n\n")
-	}
-
-	return sb.String()
-}
-
-func (p *Pipeline) runInference(ctx context.Context, prompt string) ([]scm.ReviewComment, error) {
-	resp, err := p.llmClient.InvokeModelWithRetry(ctx, llm.LLMRequest{
-		Prompt:      prompt,
-		MaxTokens:   4096,
-		Temperature: 0.2,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("LLM invocation failed: %w", err)
-	}
-
-	content := strings.TrimSpace(resp.Content)
-	content = strings.TrimPrefix(content, "```json")
-	content = strings.TrimPrefix(content, "```")
-	content = strings.TrimSuffix(content, "```")
-	content = strings.TrimSpace(content)
-
-	var comments []scm.ReviewComment
-	if err := json.Unmarshal([]byte(content), &comments); err != nil {
-		return nil, fmt.Errorf("failed to parse LLM response as JSON: %w", err)
-	}
-
-	return comments, nil
-}
-
 func (p *Pipeline) validateComments(comments []scm.ReviewComment, files []scm.PullRequestFile) []scm.ReviewComment {
 	fileSet := make(map[string]bool, len(files))
 	for _, f := range files {
@@ -196,10 +227,78 @@ func (p *Pipeline) validateComments(comments []scm.ReviewComment, files []scm.Pu
 
 func formatComments(comments []scm.ReviewComment) string {
 	var sb strings.Builder
+	sb.WriteString("<!-- codestrike:review -->\n")
 	sb.WriteString("## Code Review\n\n")
 
 	for _, c := range comments {
 		fmt.Fprintf(&sb, "**%s:%d**\n%s\n\n", c.File, c.Line, c.Body)
+	}
+
+	return sb.String()
+}
+
+func (p *Pipeline) fetchExistingCommentsContext(ctx context.Context, prNumber int) string {
+	general, err := p.client.GetPRComments(ctx, prNumber)
+	if err != nil {
+		p.logger.Warn().Err(err).Msg("failed to fetch PR comments, continuing without")
+		return ""
+	}
+
+	inline, err := p.client.GetPRReviewComments(ctx, prNumber)
+	if err != nil {
+		p.logger.Warn().Err(err).Msg("failed to fetch review comments, continuing without")
+		return ""
+	}
+
+	all := append(general, inline...)
+	if len(all) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, c := range all {
+		isCodestrike := strings.Contains(c.Body, "<!-- codestrike:review -->")
+		source := c.Author
+		if isCodestrike {
+			source = "codestrike"
+		}
+
+		if c.Path != "" && c.Line > 0 {
+			fmt.Fprintf(&sb, "- [%s:%d] %q — reviewer: %s\n", c.Path, c.Line, truncate(c.Body, 120), source)
+		} else {
+			fmt.Fprintf(&sb, "- (general) %q — reviewer: %s\n", truncate(c.Body, 120), source)
+		}
+	}
+
+	return sb.String()
+}
+
+func truncate(s string, maxLen int) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	if len(s) > maxLen {
+		return s[:maxLen] + "..."
+	}
+	return s
+}
+
+func (p *Pipeline) loadContextFiles() string {
+	files := p.config.Review.ContextFiles
+	if len(files) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, filePath := range files {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			p.logger.Debug().Str("file", filePath).Msg("context file not found, skipping")
+			continue
+		}
+		content := strings.TrimSpace(string(data))
+		if content == "" {
+			continue
+		}
+		fmt.Fprintf(&sb, "### %s\n%s\n\n", filepath.Base(filePath), content)
 	}
 
 	return sb.String()

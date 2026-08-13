@@ -10,6 +10,7 @@ import (
 	"github.com/CrowdStrike/codestrike/internal/review"
 	"github.com/CrowdStrike/codestrike/internal/setup"
 	"github.com/CrowdStrike/codestrike/internal/setup/logger"
+	"github.com/CrowdStrike/codestrike/internal/tokenizer"
 )
 
 func newReviewCmd() *cobra.Command {
@@ -48,7 +49,8 @@ func newReviewCmd() *cobra.Command {
 				return fmt.Errorf("wiring dependencies: %w", err)
 			}
 
-			pipeline := review.NewPipeline(deps.SCMClient, deps.LLMClient, deps.AppConfig, deps.Logger)
+			tok := tokenizer.NewForModel(appConfig.Review.Context.TokenizerModel)
+			pipeline := review.NewPipeline(deps.SCMClient, deps.LLMClient, deps.AppConfig, tok, deps.Logger)
 
 			return pipeline.Run(cmd.Context(), ref)
 		},

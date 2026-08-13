@@ -18,9 +18,23 @@ type GitHubConfig struct {
 }
 
 type ReviewConfig struct {
-	SystemPrompt string     `yaml:"system_prompt"`
-	Tone         string     `yaml:"tone"`
-	Guardrails   Guardrails `yaml:"guardrails"`
+	SystemPrompt string        `yaml:"system_prompt"`
+	Tone         string        `yaml:"tone"`
+	ContextFiles []string      `yaml:"context_files"`
+	Guardrails   Guardrails    `yaml:"guardrails"`
+	Context      ContextConfig `yaml:"context"`
+}
+
+type ContextConfig struct {
+	MaxInputRatio        float64              `yaml:"max_input_ratio"`
+	ReservedOutputTokens int                  `yaml:"reserved_output_tokens"`
+	TokenizerModel       string               `yaml:"tokenizer_model"`
+	ModelLimits          map[string]ModelLimit `yaml:"model_limits"`
+}
+
+type ModelLimit struct {
+	ContextWindow   int `yaml:"context_window"`
+	MaxOutputTokens int `yaml:"max_output_tokens"`
 }
 
 type Guardrails struct {
