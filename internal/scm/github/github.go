@@ -189,6 +189,40 @@ func (c *Client) GetPullRequestFiles(ctx context.Context, number int) ([]scm.Pul
 	return files, nil
 }
 
+func (c *Client) GetFileContent(ctx context.Context, path, ref string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/contents/%s", c.config.BaseURL, c.config.Owner, c.config.Repo, path)
+	if ref != "" {
+		url += "?ref=" + ref
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3.raw")
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return "", fmt.Errorf("file %q not found", path)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("reading response: %w", err)
+	}
+
+	return string(body), nil
+}
+
 func (c *Client) setAuth(req *http.Request) {
 	if c.config.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.config.Token)

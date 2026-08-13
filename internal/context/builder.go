@@ -48,6 +48,9 @@ func (b *Builder) Build(files []scm.PullRequestFile, existingComments, memoryCon
 
 	for _, f := range files {
 		fileTokens := b.tokenizer.CountTokens(f.Patch)
+		if f.Content != "" {
+			fileTokens += b.tokenizer.CountTokens(f.Content)
+		}
 		if usedTokens+fileTokens > patchBudget {
 			skipped = append(skipped, f.Filename)
 			continue
@@ -72,9 +75,16 @@ func (b *Builder) buildSystemSection() string {
 	sb.WriteString(b.config.Review.SystemPrompt)
 	sb.WriteString("\n\n")
 	fmt.Fprintf(&sb, "Tone: %s\n\n", b.config.Review.Tone)
-	sb.WriteString("Review the following changes and provide feedback as JSON array.\n")
-	sb.WriteString("Each item must have: {\"file\": \"<path>\", \"line\": <number>, \"body\": \"<comment>\"}\n")
-	sb.WriteString("Respond ONLY with the JSON array, no markdown fences or other text.\n")
+	sb.WriteString("## Instructions\n\n")
+	sb.WriteString("Think through each file's changes step by step. For each file, reason about:\n")
+	sb.WriteString("- What the change does and why it might be wrong\n")
+	sb.WriteString("- Edge cases, error handling gaps, security implications\n")
+	sb.WriteString("- Whether the change is consistent with the surrounding code\n\n")
+	sb.WriteString("After your analysis, output your findings as a JSON array.\n")
+	sb.WriteString("Each item must have: {\"file\": \"<path>\", \"line\": <number>, \"body\": \"<comment>\"}\n\n")
+	sb.WriteString("Format your response as:\n")
+	sb.WriteString("<reasoning>\n...your step-by-step analysis here...\n</reasoning>\n\n")
+	sb.WriteString("```json\n[...your comments here...]\n```\n")
 	return sb.String()
 }
 
@@ -115,6 +125,11 @@ func (b *Builder) assemblePrompt(system, projectContext, comments, memory string
 	sb.WriteString("\n## Changed Files\n\n")
 	for _, f := range files {
 		fmt.Fprintf(&sb, "--- File: %s (status: %s) ---\n", f.Filename, f.Status)
+		if f.Content != "" {
+			sb.WriteString("Full file content:\n")
+			sb.WriteString(f.Content)
+			sb.WriteString("\n\nDiff:\n")
+		}
 		sb.WriteString(f.Patch)
 		sb.WriteString("\n\n")
 	}

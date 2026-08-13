@@ -19,20 +19,26 @@ import (
 )
 
 type Pipeline struct {
-	client    scm.Client
-	llmClient llm.LLMClient
-	config    *config.Config
-	tokenizer tokenizer.Tokenizer
-	logger    *zerolog.Logger
+	client      scm.Client
+	llmClient   llm.LLMClient
+	config      *config.Config
+	tokenizer   tokenizer.Tokenizer
+	fullContext bool
+	logger      *zerolog.Logger
 }
 
-func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, tok tokenizer.Tokenizer, logger *zerolog.Logger) *Pipeline {
+type Options struct {
+	FullContext bool
+}
+
+func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, tok tokenizer.Tokenizer, logger *zerolog.Logger, opts Options) *Pipeline {
 	return &Pipeline{
-		client:    client,
-		llmClient: llmClient,
-		config:    cfg,
-		tokenizer: tok,
-		logger:    logger,
+		client:      client,
+		llmClient:   llmClient,
+		config:      cfg,
+		tokenizer:   tok,
+		fullContext: opts.FullContext,
+		logger:      logger,
 	}
 }
 
@@ -61,6 +67,11 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	if len(filtered) == 0 {
 		p.logger.Warn().Msg("no files to review after applying guardrails")
 		return nil
+	}
+
+	// Step 3b: Fetch full file content if requested
+	if p.fullContext {
+		filtered = p.enrichWithContent(ctx, filtered)
 	}
 
 	// Step 4: Build context-aware prompts
@@ -143,11 +154,21 @@ func (p *Pipeline) runInference(ctx context.Context, prompt string, maxTokens in
 }
 
 func parseResponse(content string) ([]scm.ReviewComment, error) {
+	// Strip chain-of-thought reasoning block
+	if idx := strings.Index(content, "</reasoning>"); idx != -1 {
+		content = content[idx+len("</reasoning>"):]
+	}
+
 	content = strings.TrimSpace(content)
 	content = strings.TrimPrefix(content, "```json")
 	content = strings.TrimPrefix(content, "```")
 	content = strings.TrimSuffix(content, "```")
 	content = strings.TrimSpace(content)
+
+	// Handle empty review (no issues found)
+	if content == "[]" || content == "" {
+		return nil, nil
+	}
 
 	var comments []scm.ReviewComment
 	if err := json.Unmarshal([]byte(content), &comments); err != nil {
@@ -279,6 +300,22 @@ func truncate(s string, maxLen int) string {
 		return s[:maxLen] + "..."
 	}
 	return s
+}
+
+func (p *Pipeline) enrichWithContent(ctx context.Context, files []scm.PullRequestFile) []scm.PullRequestFile {
+	for i, f := range files {
+		if f.Status == "added" {
+			continue
+		}
+		content, err := p.client.GetFileContent(ctx, f.Filename, "")
+		if err != nil {
+			p.logger.Debug().Str("file", f.Filename).Err(err).Msg("could not fetch full content")
+			continue
+		}
+		files[i].Content = content
+	}
+	p.logger.Info().Int("files_enriched", len(files)).Msg("fetched full file content")
+	return files
 }
 
 func (p *Pipeline) loadContextFiles() string {

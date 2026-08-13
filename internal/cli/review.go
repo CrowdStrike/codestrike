@@ -2,6 +2,8 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
@@ -29,6 +31,16 @@ func newReviewCmd() *cobra.Command {
 				return fmt.Errorf("reading --config flag: %w", err)
 			}
 
+			fullContext, err := cmd.Flags().GetBool("full-context")
+			if err != nil {
+				return fmt.Errorf("reading --full-context flag: %w", err)
+			}
+
+			persona, err := cmd.Flags().GetString("persona")
+			if err != nil {
+				return fmt.Errorf("reading --persona flag: %w", err)
+			}
+
 			configPath, err := config.ResolvePath(configFlag)
 			if err != nil {
 				return fmt.Errorf("resolving config path: %w", err)
@@ -37,6 +49,15 @@ func newReviewCmd() *cobra.Command {
 			appConfig, err := config.Load(configPath)
 			if err != nil {
 				return fmt.Errorf("loading config: %w", err)
+			}
+
+			if persona != "" {
+				promptPath := filepath.Join(filepath.Dir(configPath), "prompts", persona+".md")
+				data, err := os.ReadFile(promptPath)
+				if err != nil {
+					return fmt.Errorf("persona %q not found (expected at %s): %w", persona, promptPath, err)
+				}
+				appConfig.Review.SystemPrompt = string(data)
 			}
 
 			ref, err := review.ParsePRURL(args[0])
@@ -50,11 +71,16 @@ func newReviewCmd() *cobra.Command {
 			}
 
 			tok := tokenizer.NewForModel(appConfig.Review.Context.TokenizerModel)
-			pipeline := review.NewPipeline(deps.SCMClient, deps.LLMClient, deps.AppConfig, tok, deps.Logger)
+			pipeline := review.NewPipeline(deps.SCMClient, deps.LLMClient, deps.AppConfig, tok, deps.Logger, review.Options{
+				FullContext: fullContext,
+			})
 
 			return pipeline.Run(cmd.Context(), ref)
 		},
 	}
+
+	cmd.Flags().Bool("full-context", false, "Fetch full file content for richer reviews (slower, uses more tokens)")
+	cmd.Flags().String("persona", "", "Review persona — maps to a prompt file in prompts/ (e.g., security, performance)")
 
 	return cmd
 }

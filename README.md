@@ -135,6 +135,26 @@ Or point at a specific config file with `--config`:
 ./codestrike review --config /path/to/default.yaml https://github.com/{owner}/{repo}/pull/{number}
 ```
 
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--config <path>` | Path to a YAML config file |
+| `--full-context` | Fetch full file content for richer reviews (slower, uses more tokens) |
+| `--persona <name>` | Select a review persona — maps to a prompt file in `prompts/` (e.g., `security`, `performance`) |
+
+Example with persona and full context:
+
+```bash
+./codestrike review --persona security --full-context https://github.com/{owner}/{repo}/pull/{number}
+```
+
+#### Chain-of-thought reasoning
+
+codestrike uses chain-of-thought prompting: the LLM is asked to reason
+step-by-step about each file's changes before producing review comments. The
+reasoning block is stripped from the final output automatically.
+
 ## Running Tests
 
 ```bash

@@ -31,6 +31,7 @@ type PRComment struct {
 type Client interface {
 	GetPullRequestDiff(ctx context.Context, number int) (string, error)
 	GetPullRequestFiles(ctx context.Context, number int) ([]PullRequestFile, error)
+	GetFileContent(ctx context.Context, path, ref string) (string, error)
 	PullRequestExists(ctx context.Context, number int) (bool, error)
 	PublishComment(ctx context.Context, number int, body string) error
 	GetPRComments(ctx context.Context, number int) ([]PRComment, error)
