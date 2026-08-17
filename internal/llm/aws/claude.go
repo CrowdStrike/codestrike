@@ -150,7 +150,7 @@ func calculateBackoff(attempt int, initialDelay, maxDelay time.Duration) time.Du
 		backoff = float64(maxDelay)
 	}
 
-	jitter := backoff * 0.2 * (2*rand.Float64() - 1) // Random value between -20% and +20%
+	jitter := backoff * 0.2 * (2*rand.Float64() - 1) //nolint:gosec // jitter timing, not security-sensitive
 	backoff += jitter
 
 	return time.Duration(backoff)

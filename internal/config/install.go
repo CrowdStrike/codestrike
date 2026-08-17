@@ -54,7 +54,7 @@ func Install(force bool) (string, error) {
 		if readErr != nil {
 			return readErr
 		}
-		return os.WriteFile(target, data, 0644)
+		return os.WriteFile(target, data, 0600)
 	})
 	if err != nil {
 		return "", fmt.Errorf("writing config files: %w", err)

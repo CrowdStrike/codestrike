@@ -22,7 +22,7 @@ func TestNewClient(t *testing.T) {
 		{
 			name:    "valid configuration",
 			baseURL: "https://api.openai.com/v1",
-			apiKey:  "sk-proj-test-key",
+			apiKey:  "test-api-key",
 			modelID: "gpt-4o-mini",
 			wantErr: false,
 		},
@@ -36,7 +36,7 @@ func TestNewClient(t *testing.T) {
 		{
 			name:    "empty model ID still creates client",
 			baseURL: "https://api.openai.com/v1",
-			apiKey:  "sk-proj-test-key",
+			apiKey:  "test-api-key",
 			modelID: "",
 			wantErr: false,
 		},

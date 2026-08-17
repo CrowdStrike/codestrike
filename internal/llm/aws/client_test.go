@@ -291,7 +291,7 @@ func TestCalculateBackoff_ConsistentWithinRange(t *testing.T) {
 	}
 }
 
-// Mock error for testing
+// Mock error for testing.
 type mockError struct {
 	msg string
 }

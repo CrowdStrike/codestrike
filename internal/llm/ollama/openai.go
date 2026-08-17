@@ -15,7 +15,7 @@ func (c *Client) InvokeModel(ctx context.Context, request llm.LLMRequest) (*llm.
 		},
 		MaxCompletionTokens: openai.Int(int64(request.MaxTokens)),
 		Temperature:         openai.Float(request.Temperature),
-		Model:               openai.ChatModel(c.ModelID),
+		Model:               c.ModelID,
 	}
 
 	output, err := c.Client.Chat.Completions.New(ctx, message)

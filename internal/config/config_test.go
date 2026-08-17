@@ -27,7 +27,7 @@ review:
       - "*.lock"
 `
 	path := filepath.Join(t.TempDir(), "test.yaml")
-	if err := os.WriteFile(path, []byte(yaml), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(yaml), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -73,7 +73,7 @@ func TestLoad_FileNotFound(t *testing.T) {
 
 func TestLoad_InvalidYAML(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "bad.yaml")
-	if err := os.WriteFile(path, []byte(":\n  :\n  - [invalid"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(":\n  :\n  - [invalid"), 0600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -90,14 +90,14 @@ func TestLoad_ResolvesPredefinedPromptAndTone(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.WriteFile(filepath.Join(dir, "prompts", "review.md"), []byte("file prompt\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "prompts", "review.md"), []byte("file prompt\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "tones", "concise.md"), []byte("file tone\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "tones", "concise.md"), []byte("file tone\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "default.yaml")
-	if err := os.WriteFile(path, []byte("review:\n  system_prompt: review\n  tone: concise.md\n"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("review:\n  system_prompt: review\n  tone: concise.md\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 

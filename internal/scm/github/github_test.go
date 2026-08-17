@@ -34,7 +34,9 @@ func TestGetPullRequestDiff(t *testing.T) {
 			t.Errorf("unexpected auth header: %s", r.Header.Get("Authorization"))
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(wantDiff))
+		if _, err := w.Write([]byte(wantDiff)); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 	defer server.Close()
 
@@ -62,7 +64,9 @@ func TestGetPullRequestDiff_NotFound(t *testing.T) {
 func TestPullRequestExists(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"number": 1}`))
+		if _, err := w.Write([]byte(`{"number": 1}`)); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 	defer server.Close()
 
@@ -124,7 +128,9 @@ func TestPublishComment_ReportsGitHubAPIError(t *testing.T) {
 	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"message":"Resource not accessible by personal access token","documentation_url":"https://docs.github.com/rest/issues/comments#create-an-issue-comment"}`))
+		if _, err := w.Write([]byte(`{"message":"Resource not accessible by personal access token","documentation_url":"https://docs.github.com/rest/issues/comments#create-an-issue-comment"}`)); err != nil {
+			t.Fatalf("write response: %v", err)
+		}
 	})
 	defer server.Close()
 

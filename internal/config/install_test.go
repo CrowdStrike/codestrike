@@ -48,7 +48,7 @@ func TestInstall_DoesNotOverwriteWithoutForce(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(dir, "default.yaml")
-	if err := os.WriteFile(path, []byte("custom"), 0644); err != nil {
+	if err := os.WriteFile(path, []byte("custom"), 0600); err != nil {
 		t.Fatal(err)
 	}
 

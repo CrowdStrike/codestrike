@@ -396,7 +396,7 @@ func TestGetHostname(t *testing.T) {
 	}
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkGetString(b *testing.B) {
 	os.Setenv("BENCH_STRING", "value")
 	defer os.Unsetenv("BENCH_STRING")
