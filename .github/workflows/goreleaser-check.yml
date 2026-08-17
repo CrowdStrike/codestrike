@@ -4,13 +4,13 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - '.goreleaser.yaml'
-      - '.github/workflows/goreleaser-check.yml'
+      - ".goreleaser.yaml"
+      - ".github/workflows/goreleaser-check.yml"
   push:
     branches: [main]
     paths:
-      - '.goreleaser.yaml'
-      - '.github/workflows/goreleaser-check.yml'
+      - ".goreleaser.yaml"
+      - ".github/workflows/goreleaser-check.yml"
 
 permissions:
   contents: read
@@ -20,23 +20,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Check goreleaser config
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: latest
           args: check
 
       - name: Build snapshot
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: latest
           args: release --snapshot --clean --skip=publish
