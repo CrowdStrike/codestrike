@@ -120,7 +120,7 @@ review:
 ### 4. Build
 
 ```bash
-go build -o codestrike ./cmd/codestrike
+make build
 ```
 
 ### 5. Run a review
@@ -155,8 +155,26 @@ codestrike uses chain-of-thought prompting: the LLM is asked to reason
 step-by-step about each file's changes before producing review comments. The
 reasoning block is stripped from the final output automatically.
 
-## Running Tests
+## Development
 
-```bash
-go test ./... -v
-```
+Common tasks are wrapped in the `Makefile`; run `make help` to list all targets.
+
+| Target | Description |
+|--------|--------------|
+| `make build` | Build the `codestrike` binary for the host platform |
+| `make run` | Run codestrike from source |
+| `make test` | Run unit tests with the race detector and coverage |
+| `make fmt` | Run `go fmt` against the code |
+| `make vet` | Run `go vet` against the code |
+| `make lint` | Run `golangci-lint` (downloaded locally if needed) |
+| `make lint-fix` | Run `golangci-lint` and apply automatic fixes |
+| `make snapshot` | Build unpublished per-platform binaries into `dist/` via GoReleaser |
+| `make clean` | Remove build, packaging, and tool artifacts |
+
+## Continuous Integration
+
+Pull requests and pushes to `main` run the `ci` workflow (`.github/workflows/ci.yml`), which verifies modules are tidy, checks formatting, and runs `make vet`, `make test`, and `make build`, plus a lint step via `golangci-lint-action`.
+
+Tagged pushes (`v*`) run the `release` workflow (`.github/workflows/release.yml`), which re-runs `ci`, then builds and publishes release artifacts with GoReleaser and generates a changelog.
+
+Changes to `.goreleaser.yaml` are validated by the `goreleaser-check` workflow (`.github/workflows/goreleaser-check.yml`), which checks the GoReleaser config and builds a snapshot release.
