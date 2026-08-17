@@ -26,9 +26,9 @@ type ReviewConfig struct {
 }
 
 type ContextConfig struct {
-	MaxInputRatio        float64              `yaml:"max_input_ratio"`
-	ReservedOutputTokens int                  `yaml:"reserved_output_tokens"`
-	TokenizerModel       string               `yaml:"tokenizer_model"`
+	MaxInputRatio        float64               `yaml:"max_input_ratio"`
+	ReservedOutputTokens int                   `yaml:"reserved_output_tokens"`
+	TokenizerModel       string                `yaml:"tokenizer_model"`
 	ModelLimits          map[string]ModelLimit `yaml:"model_limits"`
 }
 

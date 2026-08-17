@@ -81,13 +81,13 @@ func (c *Client) fetchComments(ctx context.Context, url string) ([]scm.PRComment
 }
 
 type ghComment struct {
-	ID        int64    `json:"id"`
-	Body      string   `json:"body"`
-	CreatedAt time.Time `json:"created_at"`
-	Path      string   `json:"path"`
-	Line      int      `json:"line"`
-	InReplyToID int64  `json:"in_reply_to_id"`
-	User      struct {
+	ID          int64     `json:"id"`
+	Body        string    `json:"body"`
+	CreatedAt   time.Time `json:"created_at"`
+	Path        string    `json:"path"`
+	Line        int       `json:"line"`
+	InReplyToID int64     `json:"in_reply_to_id"`
+	User        struct {
 		Login string `json:"login"`
 	} `json:"user"`
 }

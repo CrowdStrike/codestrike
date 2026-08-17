@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 	"github.com/CrowdStrike/codestrike/internal/config"
+	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 	"github.com/CrowdStrike/codestrike/internal/scm"
 	"github.com/CrowdStrike/codestrike/internal/tokenizer"
 )

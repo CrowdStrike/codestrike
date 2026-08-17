@@ -11,8 +11,8 @@ import (
 
 	"github.com/rs/zerolog"
 
-	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 	"github.com/CrowdStrike/codestrike/internal/config"
+	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 	"github.com/CrowdStrike/codestrike/internal/llm"
 	"github.com/CrowdStrike/codestrike/internal/scm"
 	"github.com/CrowdStrike/codestrike/internal/tokenizer"
@@ -177,8 +177,6 @@ func parseResponse(content string) ([]scm.ReviewComment, error) {
 
 	return comments, nil
 }
-
-
 
 func (p *Pipeline) applyGuardrails(files []scm.PullRequestFile) []scm.PullRequestFile {
 	guardrails := p.config.Review.Guardrails
