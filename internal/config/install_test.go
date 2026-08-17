@@ -12,6 +12,7 @@ import (
 func TestInstall(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	configHome, err := os.UserConfigDir()
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +40,9 @@ func TestInstall(t *testing.T) {
 }
 
 func TestInstall_DoesNotOverwriteWithoutForce(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	dir, err := config.Install(false)
 	if err != nil {
 		t.Fatal(err)

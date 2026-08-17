@@ -9,7 +9,9 @@ import (
 )
 
 func TestInitCmd(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	configHome, err := os.UserConfigDir()
 	if err != nil {
 		t.Fatal(err)
