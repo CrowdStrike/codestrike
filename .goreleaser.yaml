@@ -1,0 +1,57 @@
+version: 2
+
+project_name: codestrike
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/codestrike
+    binary: codestrike
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/CrowdStrike/codestrike/internal/version.Version={{.Version}}
+      - -X github.com/CrowdStrike/codestrike/internal/version.Commit={{.Commit}}
+      - -X github.com/CrowdStrike/codestrike/internal/version.CommitDate={{.CommitDate}}
+      - -X github.com/CrowdStrike/codestrike/internal/version.BuiltBy=goreleaser
+      - -X github.com/CrowdStrike/codestrike/internal/version.Date={{.Date}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-next'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+
+release:
+  github:
+    owner: CrowdStrike
+    name: codestrike
