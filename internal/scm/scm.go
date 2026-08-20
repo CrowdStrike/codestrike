@@ -28,9 +28,18 @@ type PRComment struct {
 	InReplyTo int64
 }
 
+type PRMetadata struct {
+	Title          string
+	Body           string
+	CommitMessages []string
+	BaseBranch     string
+	HeadBranch     string
+}
+
 type Client interface {
 	GetPullRequestDiff(ctx context.Context, number int) (string, error)
 	GetPullRequestFiles(ctx context.Context, number int) ([]PullRequestFile, error)
+	GetPullRequestMetadata(ctx context.Context, number int) (PRMetadata, error)
 	GetFileContent(ctx context.Context, path, ref string) (string, error)
 	PullRequestExists(ctx context.Context, number int) (bool, error)
 	PublishComment(ctx context.Context, number int, body string) error

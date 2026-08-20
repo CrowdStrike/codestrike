@@ -26,10 +26,14 @@ func TestBudget_Allocate(t *testing.T) {
 	budget := appcontext.NewBudget(tok, 100000, 0.75, 4096)
 	available := budget.AvailableInputTokens()
 
-	alloc := budget.Allocate(1000, 5000, 3000, 50000)
+	alloc := budget.Allocate(1000, 2000, 5000, 3000, 50000)
 
 	if alloc.SystemPrompt != 1000 {
 		t.Errorf("SystemPrompt = %d, want 1000", alloc.SystemPrompt)
+	}
+
+	if alloc.PRMetadata != 2000 {
+		t.Errorf("PRMetadata = %d, want 2000 (under 10%% cap)", alloc.PRMetadata)
 	}
 
 	if alloc.ExistingComments != 5000 {
@@ -40,7 +44,7 @@ func TestBudget_Allocate(t *testing.T) {
 		t.Errorf("Memory = %d, want 3000 (under 10%% cap)", alloc.Memory)
 	}
 
-	remaining := available - 1000 - 5000 - 3000
+	remaining := available - 1000 - 2000 - 5000 - 3000
 	if alloc.FilePatches > remaining {
 		t.Errorf("FilePatches = %d, exceeds remaining %d", alloc.FilePatches, remaining)
 	}
@@ -62,7 +66,7 @@ func TestBuilder_SmallPR_FitsInBudget(t *testing.T) {
 		{Filename: "b.go", Status: "added", Patch: "another small patch"},
 	}
 
-	result := builder.Build(files, "", "", "")
+	result := builder.Build(files, "", "", "", "")
 	if len(result.SkippedFiles) != 0 {
 		t.Errorf("expected 0 skipped files, got %d", len(result.SkippedFiles))
 	}
@@ -90,7 +94,7 @@ func TestBuilder_LargePR_SkipsFiles(t *testing.T) {
 		{Filename: "big.go", Status: "modified", Patch: strings.Repeat("word ", 500)},
 	}
 
-	result := builder.Build(files, "", "", "")
+	result := builder.Build(files, "", "", "", "")
 	if len(result.SkippedFiles) == 0 {
 		t.Error("expected some files to be skipped due to tight budget")
 	}
@@ -112,12 +116,41 @@ func TestBuilder_IncludesExistingComments(t *testing.T) {
 	}
 
 	comments := "- [a.go:10] \"missing error check\" — reviewer: codestrike"
-	result := builder.Build(files, comments, "", "")
+	result := builder.Build(files, "", comments, "", "")
 
 	if !strings.Contains(result.Prompt, "do NOT repeat") {
 		t.Error("expected prompt to contain dedup instructions")
 	}
 	if !strings.Contains(result.Prompt, "missing error check") {
 		t.Error("expected prompt to contain existing comment")
+	}
+}
+
+func TestBuilder_IncludesPRMetadata(t *testing.T) {
+	tok := tokenizer.New()
+	budget := appcontext.NewBudget(tok, 128000, 0.75, 4096)
+	cfg := &config.Config{
+		Review: config.ReviewConfig{
+			SystemPrompt: "Review.",
+			Tone:         "constructive",
+		},
+	}
+
+	builder := appcontext.NewBuilder(tok, budget, cfg)
+	files := []scm.PullRequestFile{
+		{Filename: "a.go", Status: "modified", Patch: "change"},
+	}
+
+	metadata := "**Title:** Fix null pointer in auth\n**Branch:** fix/auth → main\n\n**Description:**\nHandles the case where user session is nil.\n"
+	result := builder.Build(files, metadata, "", "", "")
+
+	if !strings.Contains(result.Prompt, "Author's Intent") {
+		t.Error("expected prompt to contain Author's Intent section")
+	}
+	if !strings.Contains(result.Prompt, "Fix null pointer in auth") {
+		t.Error("expected prompt to contain PR title")
+	}
+	if !strings.Contains(result.Prompt, "fix/auth") {
+		t.Error("expected prompt to contain branch name")
 	}
 }

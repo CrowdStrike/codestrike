@@ -31,12 +31,13 @@ func (b *Budget) CountTokens(text string) int {
 
 type SectionAllocation struct {
 	SystemPrompt     int
+	PRMetadata       int
 	ExistingComments int
 	Memory           int
 	FilePatches      int
 }
 
-func (b *Budget) Allocate(systemPromptTokens, existingCommentsTokens, memoryTokens, filePatchesTokens int) SectionAllocation {
+func (b *Budget) Allocate(systemPromptTokens, prMetadataTokens, existingCommentsTokens, memoryTokens, filePatchesTokens int) SectionAllocation {
 	available := b.AvailableInputTokens()
 
 	alloc := SectionAllocation{}
@@ -45,17 +46,22 @@ func (b *Budget) Allocate(systemPromptTokens, existingCommentsTokens, memoryToke
 	alloc.SystemPrompt = min(systemPromptTokens, available)
 	remaining := available - alloc.SystemPrompt
 
-	// Priority 2: existing comments (up to 15% of total available)
+	// Priority 2: PR metadata (up to 10% of total available)
+	metadataMax := int(float64(available) * 0.10)
+	alloc.PRMetadata = min(prMetadataTokens, min(metadataMax, remaining))
+	remaining -= alloc.PRMetadata
+
+	// Priority 3: existing comments (up to 15% of total available)
 	commentsMax := int(float64(available) * 0.15)
 	alloc.ExistingComments = min(existingCommentsTokens, min(commentsMax, remaining))
 	remaining -= alloc.ExistingComments
 
-	// Priority 3: memory (up to 10% of total available)
+	// Priority 4: memory (up to 10% of total available)
 	memoryMax := int(float64(available) * 0.10)
 	alloc.Memory = min(memoryTokens, min(memoryMax, remaining))
 	remaining -= alloc.Memory
 
-	// Priority 4: file patches (all remaining)
+	// Priority 5: file patches (all remaining)
 	alloc.FilePatches = min(filePatchesTokens, remaining)
 
 	return alloc

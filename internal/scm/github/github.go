@@ -223,6 +223,109 @@ func (c *Client) GetFileContent(ctx context.Context, path, ref string) (string, 
 	return string(body), nil
 }
 
+func (c *Client) GetPullRequestMetadata(ctx context.Context, number int) (scm.PRMetadata, error) {
+	pr, err := c.fetchPR(ctx, number)
+	if err != nil {
+		return scm.PRMetadata{}, fmt.Errorf("fetching PR details: %w", err)
+	}
+
+	commits, err := c.fetchCommits(ctx, number)
+	if err != nil {
+		return scm.PRMetadata{}, fmt.Errorf("fetching PR commits: %w", err)
+	}
+
+	return scm.PRMetadata{
+		Title:          pr.Title,
+		Body:           pr.Body,
+		CommitMessages: commits,
+		BaseBranch:     pr.Base.Ref,
+		HeadBranch:     pr.Head.Ref,
+	}, nil
+}
+
+type ghPullRequest struct {
+	Title string `json:"title"`
+	Body  string `json:"body"`
+	Base  struct {
+		Ref string `json:"ref"`
+	} `json:"base"`
+	Head struct {
+		Ref string `json:"ref"`
+	} `json:"head"`
+}
+
+type ghCommit struct {
+	Commit struct {
+		Message string `json:"message"`
+	} `json:"commit"`
+}
+
+func (c *Client) fetchPR(ctx context.Context, number int) (ghPullRequest, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d", c.config.BaseURL, c.config.Owner, c.config.Repo, number)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ghPullRequest{}, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return ghPullRequest{}, fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return ghPullRequest{}, fmt.Errorf("pull request #%d not found", number)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return ghPullRequest{}, githubAPIError(resp)
+	}
+
+	var pr ghPullRequest
+	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return ghPullRequest{}, fmt.Errorf("decoding response: %w", err)
+	}
+
+	return pr, nil
+}
+
+func (c *Client) fetchCommits(ctx context.Context, number int) ([]string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d/commits", c.config.BaseURL, c.config.Owner, c.config.Repo, number)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status %d fetching commits", resp.StatusCode)
+	}
+
+	var ghCommits []ghCommit
+	if err := json.NewDecoder(resp.Body).Decode(&ghCommits); err != nil {
+		return nil, fmt.Errorf("decoding commits: %w", err)
+	}
+
+	messages := make([]string, 0, len(ghCommits))
+	for _, c := range ghCommits {
+		if c.Commit.Message != "" {
+			messages = append(messages, c.Commit.Message)
+		}
+	}
+
+	return messages, nil
+}
+
 func (c *Client) setAuth(req *http.Request) {
 	if c.config.Token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.config.Token)

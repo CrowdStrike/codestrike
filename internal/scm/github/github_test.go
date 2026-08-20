@@ -144,3 +144,97 @@ func TestPublishComment_ReportsGitHubAPIError(t *testing.T) {
 		t.Errorf("error = %q, want %q", err, want)
 	}
 }
+
+func TestGetPullRequestMetadata(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/testowner/testrepo/pulls/42":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"title": "Fix auth null pointer",
+				"body": "Handles nil session case",
+				"base": {"ref": "main"},
+				"head": {"ref": "fix/auth-npe"}
+			}`))
+		case "/repos/testowner/testrepo/pulls/42/commits":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`[
+				{"commit": {"message": "fix: handle nil session"}},
+				{"commit": {"message": "test: add nil session test case"}}
+			]`))
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	defer server.Close()
+
+	meta, err := client.GetPullRequestMetadata(context.Background(), 42)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if meta.Title != "Fix auth null pointer" {
+		t.Errorf("Title = %q, want %q", meta.Title, "Fix auth null pointer")
+	}
+	if meta.Body != "Handles nil session case" {
+		t.Errorf("Body = %q, want %q", meta.Body, "Handles nil session case")
+	}
+	if meta.BaseBranch != "main" {
+		t.Errorf("BaseBranch = %q, want %q", meta.BaseBranch, "main")
+	}
+	if meta.HeadBranch != "fix/auth-npe" {
+		t.Errorf("HeadBranch = %q, want %q", meta.HeadBranch, "fix/auth-npe")
+	}
+	if len(meta.CommitMessages) != 2 {
+		t.Fatalf("CommitMessages len = %d, want 2", len(meta.CommitMessages))
+	}
+	if meta.CommitMessages[0] != "fix: handle nil session" {
+		t.Errorf("CommitMessages[0] = %q, want %q", meta.CommitMessages[0], "fix: handle nil session")
+	}
+}
+
+func TestGetPullRequestMetadata_NotFound(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
+	defer server.Close()
+
+	_, err := client.GetPullRequestMetadata(context.Background(), 999)
+	if err == nil {
+		t.Fatal("expected error for missing PR")
+	}
+}
+
+func TestGetPullRequestMetadata_EmptyBody(t *testing.T) {
+	server, client := setupTestServer(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/testowner/testrepo/pulls/1":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{
+				"title": "Minor tweak",
+				"body": "",
+				"base": {"ref": "main"},
+				"head": {"ref": "feat/tweak"}
+			}`))
+		case "/repos/testowner/testrepo/pulls/1/commits":
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`[]`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	defer server.Close()
+
+	meta, err := client.GetPullRequestMetadata(context.Background(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if meta.Body != "" {
+		t.Errorf("expected empty body, got %q", meta.Body)
+	}
+	if len(meta.CommitMessages) != 0 {
+		t.Errorf("expected 0 commits, got %d", len(meta.CommitMessages))
+	}
+}

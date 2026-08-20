@@ -30,16 +30,17 @@ func NewBuilder(tok tokenizer.Tokenizer, budget *Budget, cfg *config.Config) *Bu
 	}
 }
 
-func (b *Builder) Build(files []scm.PullRequestFile, existingComments, memoryContext, projectContext string) BuildResult {
+func (b *Builder) Build(files []scm.PullRequestFile, prMetadata, existingComments, memoryContext, projectContext string) BuildResult {
 	systemSection := b.buildSystemSection()
 	systemTokens := b.tokenizer.CountTokens(systemSection)
 	projectTokens := b.tokenizer.CountTokens(projectContext)
+	metadataTokens := b.tokenizer.CountTokens(prMetadata)
 	commentsTokens := b.tokenizer.CountTokens(existingComments)
 	memoryTokens := b.tokenizer.CountTokens(memoryContext)
 
 	fixedTokens := systemTokens + projectTokens
-	alloc := b.budget.Allocate(fixedTokens, commentsTokens, memoryTokens, 0)
-	patchBudget := b.budget.AvailableInputTokens() - alloc.SystemPrompt - alloc.ExistingComments - alloc.Memory
+	alloc := b.budget.Allocate(fixedTokens, metadataTokens, commentsTokens, memoryTokens, 0)
+	patchBudget := b.budget.AvailableInputTokens() - alloc.SystemPrompt - alloc.PRMetadata - alloc.ExistingComments - alloc.Memory
 
 	// Fit as many files as possible within budget
 	var included []scm.PullRequestFile
@@ -59,7 +60,7 @@ func (b *Builder) Build(files []scm.PullRequestFile, existingComments, memoryCon
 		usedTokens += fileTokens
 	}
 
-	prompt := b.assemblePrompt(systemSection, projectContext, existingComments, memoryContext, included, skipped)
+	prompt := b.assemblePrompt(systemSection, projectContext, prMetadata, existingComments, memoryContext, included, skipped)
 	totalTokens := b.tokenizer.CountTokens(prompt)
 
 	return BuildResult{
@@ -88,7 +89,7 @@ func (b *Builder) buildSystemSection() string {
 	return sb.String()
 }
 
-func (b *Builder) assemblePrompt(system, projectContext, comments, memory string, files []scm.PullRequestFile, skipped []string) string {
+func (b *Builder) assemblePrompt(system, projectContext, prMetadata, comments, memory string, files []scm.PullRequestFile, skipped []string) string {
 	var sb strings.Builder
 	sb.WriteString(system)
 	sb.WriteString("\n")
@@ -96,6 +97,12 @@ func (b *Builder) assemblePrompt(system, projectContext, comments, memory string
 	if projectContext != "" {
 		sb.WriteString("\n## Project Conventions\n")
 		sb.WriteString(projectContext)
+		sb.WriteString("\n")
+	}
+
+	if prMetadata != "" {
+		sb.WriteString("\n## Author's Intent\n")
+		sb.WriteString(prMetadata)
 		sb.WriteString("\n")
 	}
 

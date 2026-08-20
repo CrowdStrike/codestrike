@@ -81,13 +81,16 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	// Load project context files (CLAUDE.md, etc.)
 	projectContext := p.loadContextFiles()
 
+	// Fetch PR metadata (title, body, commits)
+	prMetadata := p.fetchPRMetadata(ctx, ref.Number)
+
 	// Fetch existing comments for dedup
 	existingComments := p.fetchExistingCommentsContext(ctx, ref.Number)
 
 	// Memory context (deferred — not yet implemented)
 	memoryContext := ""
 
-	result := builder.Build(filtered, existingComments, memoryContext, projectContext)
+	result := builder.Build(filtered, prMetadata, existingComments, memoryContext, projectContext)
 	p.logger.Info().
 		Int("total_tokens", result.TotalTokens).
 		Int("skipped_files", len(result.SkippedFiles)).
@@ -334,6 +337,32 @@ func (p *Pipeline) loadContextFiles() string {
 			continue
 		}
 		fmt.Fprintf(&sb, "### %s\n%s\n\n", filepath.Base(filePath), content)
+	}
+
+	return sb.String()
+}
+
+func (p *Pipeline) fetchPRMetadata(ctx context.Context, prNumber int) string {
+	meta, err := p.client.GetPullRequestMetadata(ctx, prNumber)
+	if err != nil {
+		p.logger.Warn().Err(err).Msg("failed to fetch PR metadata, continuing without")
+		return ""
+	}
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "**Title:** %s\n", meta.Title)
+	fmt.Fprintf(&sb, "**Branch:** %s → %s\n", meta.HeadBranch, meta.BaseBranch)
+
+	if meta.Body != "" {
+		fmt.Fprintf(&sb, "\n**Description:**\n%s\n", meta.Body)
+	}
+
+	if len(meta.CommitMessages) > 0 {
+		sb.WriteString("\n**Commits:**\n")
+		for _, msg := range meta.CommitMessages {
+			first, _, _ := strings.Cut(msg, "\n")
+			fmt.Fprintf(&sb, "- %s\n", first)
+		}
 	}
 
 	return sb.String()
