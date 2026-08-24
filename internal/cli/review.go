@@ -52,6 +52,9 @@ func newReviewCmd() *cobra.Command {
 			}
 
 			if persona != "" {
+				if filepath.Base(persona) != persona {
+					return fmt.Errorf("persona %q must be a plain name, not a path", persona)
+				}
 				promptPath := filepath.Join(filepath.Dir(configPath), "prompts", persona+".md")
 				data, err := os.ReadFile(promptPath)
 				if err != nil {
