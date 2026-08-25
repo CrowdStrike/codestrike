@@ -29,9 +29,6 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Generate changelog
-        run: go run github.com/git-chglog/git-chglog/cmd/git-chglog@d7f33d0797db87da8e6808a79a31089279644f92 --output CHANGELOG.md # v0.15.4
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -39,8 +36,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload changelog
-        run: gh release upload "$GITHUB_REF_NAME" CHANGELOG.md --clobber
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
