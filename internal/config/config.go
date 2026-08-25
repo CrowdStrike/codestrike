@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -45,7 +47,7 @@ type Guardrails struct {
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, fmt.Errorf("config file not found at %q; pass --config to specify a different path", path)
 		}
 		return nil, fmt.Errorf("reading config file: %w", err)
@@ -81,7 +83,7 @@ func resolveText(configDir, subdir, value string) (string, error) {
 		if err == nil {
 			return string(data), nil
 		}
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return "", fmt.Errorf("reading %q: %w", path, err)
 		}
 	}

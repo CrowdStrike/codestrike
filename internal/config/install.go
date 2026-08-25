@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -29,7 +30,7 @@ func Install(force bool) (string, error) {
 			target := filepath.Join(targetDir, filepath.FromSlash(path))
 			if _, statErr := os.Stat(target); statErr == nil {
 				existing = target
-			} else if !os.IsNotExist(statErr) {
+			} else if !errors.Is(statErr, fs.ErrNotExist) {
 				return statErr
 			}
 			return nil
