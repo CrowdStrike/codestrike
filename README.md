@@ -3,8 +3,6 @@
 
 # codestrike
 
-AI-driven pull request review tool using configurable LLM judges.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://go.dev/)
 
