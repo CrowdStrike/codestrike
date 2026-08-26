@@ -153,6 +153,19 @@ codestrike uses chain-of-thought prompting: the LLM is asked to reason
 step-by-step about each file's changes before producing review comments. The
 reasoning block is stripped from the final output automatically.
 
+## Cursor Integration
+
+codestrike ships as a [Cursor Plugin](https://agent-plugins.org) (`plugin.json` + `skills/pr-review/SKILL.md`) so you can ask Cursor's Agent to review a pull request directly from chat. The skill shells out to the `codestrike review` CLI — there is no MCP server yet, so `codestrike` must be built and on `PATH`.
+
+To try it locally:
+
+```bash
+go install ./cmd/codestrike
+ln -s "$(pwd)" ~/.cursor/plugins/local/codestrike
+```
+
+Reload Cursor (`Developer: Reload Window`) and confirm `pr-review` appears under **Customize → Skills**. See [`docs/cursor-integration.md`](docs/cursor-integration.md) for details and planned follow-up work (an MCP server, richer `.cursor/rules`/`AGENTS.md` context discovery).
+
 ## Development
 
 Common tasks are wrapped in the `Makefile`; run `make help` to list all targets.
