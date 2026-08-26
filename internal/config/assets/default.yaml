@@ -21,6 +21,10 @@ review:
     max_input_ratio: 0.75
     reserved_output_tokens: 4096
     tokenizer_model: o200k_base
+    # Set to true to also read AGENTS.md and .cursor/rules/*.mdc (rules with
+    # alwaysApply: true, or no globs/alwaysApply frontmatter at all) from the
+    # reviewed repo as additional project context. Off by default.
+    # discover_cursor_rules: true
     model_limits:
       gpt-4o:
         context_window: 128000
