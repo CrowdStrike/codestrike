@@ -291,9 +291,9 @@ func (p *Pipeline) fetchExistingCommentsContext(ctx context.Context, prNumber in
 	var ownBuf strings.Builder
 	for _, c := range codestrikeComments {
 		if c.Path != "" && c.Line > 0 {
-			fmt.Fprintf(&ownBuf, "- [%s:%d] %q\n", c.Path, c.Line, truncate(c.Body, 120))
+			fmt.Fprintf(&ownBuf, "- [%s:%d] %q\n", c.Path, c.Line, truncate(c.Body))
 		} else {
-			fmt.Fprintf(&ownBuf, "- (general) %q\n", truncate(c.Body, 120))
+			fmt.Fprintf(&ownBuf, "- (general) %q\n", truncate(c.Body))
 		}
 	}
 
@@ -327,16 +327,17 @@ func (p *Pipeline) fetchExistingCommentsContext(ctx context.Context, prNumber in
 	var feedbackBuf strings.Builder
 	for _, c := range feedback {
 		if c.Path != "" && c.Line > 0 {
-			fmt.Fprintf(&feedbackBuf, "- [%s:%d] %q — author: %s\n", c.Path, c.Line, truncate(c.Body, 120), c.Author)
+			fmt.Fprintf(&feedbackBuf, "- [%s:%d] %q — author: %s\n", c.Path, c.Line, truncate(c.Body), c.Author)
 		} else {
-			fmt.Fprintf(&feedbackBuf, "- (general) %q — author: %s\n", truncate(c.Body, 120), c.Author)
+			fmt.Fprintf(&feedbackBuf, "- (general) %q — author: %s\n", truncate(c.Body), c.Author)
 		}
 	}
 
 	return ownBuf.String(), feedbackBuf.String()
 }
 
-func truncate(s string, maxLen int) string {
+func truncate(s string) string {
+	const maxLen = 120
 	s = strings.ReplaceAll(s, "\n", " ")
 	if len(s) > maxLen {
 		return s[:maxLen] + "..."
