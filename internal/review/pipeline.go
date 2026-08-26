@@ -7,7 +7,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/rs/zerolog"
 
@@ -81,13 +83,13 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	// Load project context files (CLAUDE.md, etc.)
 	projectContext := p.loadContextFiles()
 
-	// Fetch existing comments for dedup
-	existingComments := p.fetchExistingCommentsContext(ctx, ref.Number)
+	// Fetch existing comments: codestrike's own (trusted, dedup) and user feedback (untrusted)
+	ownComments, userFeedback := p.fetchExistingCommentsContext(ctx, ref.Number)
 
 	// Memory context (deferred — not yet implemented)
 	memoryContext := ""
 
-	result := builder.Build(filtered, existingComments, memoryContext, projectContext)
+	result := builder.Build(filtered, ownComments, userFeedback, memoryContext, projectContext)
 	p.logger.Info().
 		Int("total_tokens", result.TotalTokens).
 		Int("skipped_files", len(result.SkippedFiles)).
@@ -256,43 +258,86 @@ func formatComments(comments []scm.ReviewComment) string {
 	return sb.String()
 }
 
-func (p *Pipeline) fetchExistingCommentsContext(ctx context.Context, prNumber int) string {
+func (p *Pipeline) fetchExistingCommentsContext(ctx context.Context, prNumber int) (ownComments, userFeedback string) {
 	general, err := p.client.GetPRComments(ctx, prNumber)
 	if err != nil {
 		p.logger.Warn().Err(err).Msg("failed to fetch PR comments, continuing without")
-		return ""
+		return "", ""
 	}
 
 	inline, err := p.client.GetPRReviewComments(ctx, prNumber)
 	if err != nil {
 		p.logger.Warn().Err(err).Msg("failed to fetch review comments, continuing without")
-		return ""
+		return "", ""
 	}
 
 	all := append(general, inline...)
 	if len(all) == 0 {
-		return ""
+		return "", ""
 	}
 
-	var sb strings.Builder
+	// Separate codestrike's own comments from everything else.
+	var codestrikeComments []scm.PRComment
+	var otherComments []scm.PRComment
 	for _, c := range all {
-		isCodestrike := strings.Contains(c.Body, "<!-- codestrike:review -->")
-		source := c.Author
-		if isCodestrike {
-			source = "codestrike"
-		}
-
-		if c.Path != "" && c.Line > 0 {
-			fmt.Fprintf(&sb, "- [%s:%d] %q — reviewer: %s\n", c.Path, c.Line, truncate(c.Body, 120), source)
+		if strings.Contains(c.Body, "<!-- codestrike:review -->") {
+			codestrikeComments = append(codestrikeComments, c)
 		} else {
-			fmt.Fprintf(&sb, "- (general) %q — reviewer: %s\n", truncate(c.Body, 120), source)
+			otherComments = append(otherComments, c)
 		}
 	}
 
-	return sb.String()
+	// Build trusted context: codestrike's own prior reviews (for dedup).
+	var ownBuf strings.Builder
+	for _, c := range codestrikeComments {
+		if c.Path != "" && c.Line > 0 {
+			fmt.Fprintf(&ownBuf, "- [%s:%d] %q\n", c.Path, c.Line, truncate(c.Body))
+		} else {
+			fmt.Fprintf(&ownBuf, "- (general) %q\n", truncate(c.Body))
+		}
+	}
+
+	// Build untrusted context: user feedback posted AFTER the latest codestrike review.
+	if len(codestrikeComments) == 0 {
+		return ownBuf.String(), ""
+	}
+
+	var latestReview time.Time
+	for _, c := range codestrikeComments {
+		if c.CreatedAt.After(latestReview) {
+			latestReview = c.CreatedAt
+		}
+	}
+
+	// Collect feedback after the latest codestrike review, newest first, cap at 10.
+	var feedback []scm.PRComment
+	for _, c := range otherComments {
+		if c.CreatedAt.After(latestReview) {
+			feedback = append(feedback, c)
+		}
+	}
+	sort.Slice(feedback, func(i, j int) bool {
+		return feedback[i].CreatedAt.After(feedback[j].CreatedAt)
+	})
+	const maxFeedback = 10
+	if len(feedback) > maxFeedback {
+		feedback = feedback[:maxFeedback]
+	}
+
+	var feedbackBuf strings.Builder
+	for _, c := range feedback {
+		if c.Path != "" && c.Line > 0 {
+			fmt.Fprintf(&feedbackBuf, "- [%s:%d] %q — author: %s\n", c.Path, c.Line, truncate(c.Body), c.Author)
+		} else {
+			fmt.Fprintf(&feedbackBuf, "- (general) %q — author: %s\n", truncate(c.Body), c.Author)
+		}
+	}
+
+	return ownBuf.String(), feedbackBuf.String()
 }
 
-func truncate(s string, maxLen int) string {
+func truncate(s string) string {
+	const maxLen = 120
 	s = strings.ReplaceAll(s, "\n", " ")
 	if len(s) > maxLen {
 		return s[:maxLen] + "..."
