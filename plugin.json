@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "codestrike",
+  "description": "AI-powered pull request review for GitHub, invocable from Cursor as a skill.",
+  "version": "0.1.0",
+  "author": { "name": "CrowdStrike" }
+}
