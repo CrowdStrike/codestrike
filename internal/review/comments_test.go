@@ -29,7 +29,7 @@ func (m *mockClient) GetPullRequestFiles(_ context.Context, _ int) ([]scm.PullRe
 	return nil, nil
 }
 func (m *mockClient) GetFileContent(_ context.Context, _, _ string) (string, error) { return "", nil }
-func (m *mockClient) PullRequestExists(_ context.Context, _ int) (bool, error)     { return true, nil }
+func (m *mockClient) PullRequestExists(_ context.Context, _ int) (bool, error)      { return true, nil }
 func (m *mockClient) PublishComment(_ context.Context, _ int, _ string) error       { return nil }
 
 func newTestPipeline(client scm.Client) *Pipeline {
