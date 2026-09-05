@@ -80,8 +80,9 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	budget := p.createBudget()
 	builder := appcontext.NewBuilder(p.tokenizer, budget, p.config)
 
-	// Load project context files (CLAUDE.md, etc.)
-	projectContext := p.loadContextFiles()
+	// Load project context files (CLAUDE.md, etc.) plus Cursor-native
+	// context (AGENTS.md, .cursor/rules/*.mdc), if enabled.
+	projectContext := p.loadProjectContext()
 
 	// Fetch existing comments: codestrike's own (trusted, dedup) and user feedback (untrusted)
 	ownComments, userFeedback := p.fetchExistingCommentsContext(ctx, ref.Number)
@@ -359,6 +360,22 @@ func (p *Pipeline) enrichWithContent(ctx context.Context, files []scm.PullReques
 	}
 	p.logger.Info().Int("files_enriched", len(files)).Msg("fetched full file content")
 	return files
+}
+
+func (p *Pipeline) loadProjectContext() string {
+	var sb strings.Builder
+	sb.WriteString(p.loadContextFiles())
+
+	if p.config.Review.Context.DiscoverCursorRules {
+		cwd, err := os.Getwd()
+		if err != nil {
+			p.logger.Debug().Err(err).Msg("could not determine working directory for cursor rule discovery")
+			return sb.String()
+		}
+		sb.WriteString(appcontext.DiscoverCursorContext(cwd))
+	}
+
+	return sb.String()
 }
 
 func (p *Pipeline) loadContextFiles() string {

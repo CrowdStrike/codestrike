@@ -114,6 +114,7 @@ review:
 | `context.reserved_output_tokens` | Tokens reserved for the model's response (default: `4096`) |
 | `context.tokenizer_model` | Tiktoken encoding used for token counting (default: `o200k_base`) |
 | `context.model_limits` | Per-model context window and max output token settings |
+| `context.discover_cursor_rules` | When `true`, also read `AGENTS.md` and `.cursor/rules/*.mdc` (rules with `alwaysApply: true`, or no `globs`/`alwaysApply` frontmatter at all) from the reviewed repo as additional project context. Default: `false` |
 
 ### 4. Build
 
@@ -152,6 +153,19 @@ Example with persona and full context:
 codestrike uses chain-of-thought prompting: the LLM is asked to reason
 step-by-step about each file's changes before producing review comments. The
 reasoning block is stripped from the final output automatically.
+
+## Cursor Integration
+
+codestrike ships as a [Cursor Plugin](https://agent-plugins.org) (`plugin.json` + `skills/pr-review/SKILL.md`) so you can ask Cursor's Agent to review a pull request directly from chat. The skill shells out to the `codestrike review` CLI — there is no MCP server yet, so `codestrike` must be built and on `PATH`.
+
+To try it locally:
+
+```bash
+go install ./cmd/codestrike
+ln -s "$(pwd)" ~/.cursor/plugins/local/codestrike
+```
+
+Reload Cursor (`Developer: Reload Window`) and confirm `pr-review` appears under **Customize → Skills**. codestrike's own review pipeline can also read Cursor-native project instructions (`AGENTS.md`, `.cursor/rules/*.mdc`) from the reviewed repo — see `context.discover_cursor_rules` above. See [`docs/cursor-integration.md`](docs/cursor-integration.md) for details and planned follow-up work (an MCP server).
 
 ## Development
 
