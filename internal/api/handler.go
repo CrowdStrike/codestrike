@@ -30,28 +30,28 @@ func NewHandler(llmClient llm.LLMClient, appConfig *config.Config, ghToken strin
 	}
 }
 
-// Healthz handles GET /healthz
+// Healthz handles GET /healthz.
 func (h *Handler) Healthz(req *restful.Request, resp *restful.Response) {
 	healthResponse := HealthResponse{
 		Status:  "ok",
 		Version: "1.0.0",
 	}
 
-	resp.WriteHeaderAndEntity(http.StatusOK, healthResponse)
+	_ = resp.WriteHeaderAndEntity(http.StatusOK, healthResponse)
 }
 
-// Review handles POST /api/v1/review
+// Review handles POST /api/v1/review.
 func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 	var body ReviewRequest
 	if err := req.ReadEntity(&body); err != nil {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
+		_ = resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
 			Error: fmt.Sprintf("invalid request body: %v", err),
 		})
 		return
 	}
 
 	if body.PrUrl == "" {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
+		_ = resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
 			Error: "pr_url is required",
 		})
 		return
@@ -59,7 +59,7 @@ func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 
 	ref, err := review.ParsePrUrl(body.PrUrl)
 	if err != nil {
-		resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
+		_ = resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
 			Error: fmt.Sprintf("invalid PR URL: %v", err),
 		})
 		return
@@ -79,13 +79,13 @@ func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 
 	if err := pipeline.Run(req.Request.Context(), ref); err != nil {
 		h.logger.Error().Err(err).Str("pr_url", body.PrUrl).Msg("review failed")
-		resp.WriteHeaderAndEntity(http.StatusInternalServerError, ErrorResponse{
+		_ = resp.WriteHeaderAndEntity(http.StatusInternalServerError, ErrorResponse{
 			Error: fmt.Sprintf("review failed: %v", err),
 		})
 		return
 	}
 
-	resp.WriteHeaderAndEntity(http.StatusOK, ReviewResponse{
+	_ = resp.WriteHeaderAndEntity(http.StatusOK, ReviewResponse{
 		Status: "reviewed",
 		Owner:  ref.Owner,
 		Repo:   ref.Repo,
