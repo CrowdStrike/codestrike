@@ -17,14 +17,15 @@ import (
 )
 
 type Config struct {
-	GitHubToken string
-	OpenAIURL   string
-	OpenAIKey   string
-	AWSRegion   string
-	OllamaURL   string
-	ModelFamily string
-	ModelID     string
-	LogLevel    string
+	GitHubToken    string
+	OpenAIURL      string
+	OpenAIKey      string
+	AWSRegion      string
+	OllamaURL      string
+	ModelFamily    string
+	ModelID        string
+	LogLevel       string
+	ListenHttpPort string
 }
 
 type Dependencies struct {
@@ -36,14 +37,15 @@ type Dependencies struct {
 
 func LoadConfig() *Config {
 	return &Config{
-		GitHubToken: env.GetString("GITHUB_TOKEN", ""),
-		OpenAIURL:   env.GetString("OPEN_AI_BASE_URL", "https://api.openai.com/v1"),
-		OpenAIKey:   env.GetString("OPEN_AI_KEY", ""),
-		AWSRegion:   env.GetString("AWS_REGION", "us-east-1"),
-		OllamaURL:   env.GetString("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
-		ModelFamily: env.GetString("MODEL_FAMILY", "openai_platform"),
-		ModelID:     env.GetString("MODEL_ID", "gpt-4o"),
-		LogLevel:    env.GetString("LOG_LEVEL", "info"),
+		GitHubToken:    env.GetString("GITHUB_TOKEN", ""),
+		OpenAIURL:      env.GetString("OPEN_AI_BASE_URL", "https://api.openai.com/v1"),
+		OpenAIKey:      env.GetString("OPEN_AI_KEY", ""),
+		AWSRegion:      env.GetString("AWS_REGION", "us-east-1"),
+		OllamaURL:      env.GetString("OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+		ModelFamily:    env.GetString("MODEL_FAMILY", "openai_platform"),
+		ModelID:        env.GetString("MODEL_ID", "gpt-4o"),
+		LogLevel:       env.GetString("LOG_LEVEL", "info"),
+		ListenHttpPort: env.GetString("HTTP_LISTENING_PORT", "8000"),
 	}
 }
 
@@ -59,7 +61,7 @@ func Wire(ctx context.Context, cfg *Config, appConfig *config.Config, logger *ze
 		BaseURL: appConfig.GitHub.BaseURL,
 	})
 
-	llmClient, err := createLLMClient(ctx, cfg)
+	llmClient, err := CreateLLMClient(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("creating LLM client: %w", err)
 	}
@@ -72,7 +74,7 @@ func Wire(ctx context.Context, cfg *Config, appConfig *config.Config, logger *ze
 	}, nil
 }
 
-func createLLMClient(ctx context.Context, cfg *Config) (llm.LLMClient, error) {
+func CreateLLMClient(ctx context.Context, cfg *Config) (llm.LLMClient, error) {
 	family, err := llm.ParseFamily(cfg.ModelFamily)
 	if err != nil {
 		return nil, err

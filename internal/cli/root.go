@@ -22,7 +22,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newReviewCmd())
 	root.AddCommand(newInitCmd())
 	root.AddCommand(newVersionCmd())
-
+	root.AddCommand(newServeCmd())
 	return root
 }
 
