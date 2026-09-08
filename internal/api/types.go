@@ -6,7 +6,7 @@ type HealthResponse struct {
 }
 
 type ReviewRequest struct {
-	PrUrl      string `json:"pr_url"`
+	PrUrl       string `json:"pr_url"`
 	FullContext bool   `json:"full_context,omitempty"`
 }
 
