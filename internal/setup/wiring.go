@@ -12,12 +12,14 @@ import (
 	"github.com/CrowdStrike/codestrike/internal/llm/aws"
 	"github.com/CrowdStrike/codestrike/internal/llm/ollama"
 	"github.com/CrowdStrike/codestrike/internal/llm/openaiplatform"
+	"github.com/CrowdStrike/codestrike/internal/review"
 	"github.com/CrowdStrike/codestrike/internal/scm"
 	"github.com/CrowdStrike/codestrike/internal/scm/github"
 )
 
 type Config struct {
 	GitHubToken    string
+	BitbucketToken string
 	OpenAIURL      string
 	OpenAIKey      string
 	AWSRegion      string
@@ -38,6 +40,7 @@ type Dependencies struct {
 func LoadConfig() *Config {
 	return &Config{
 		GitHubToken:    env.GetString("GITHUB_TOKEN", ""),
+		BitbucketToken: env.GetString("BITBUCKET_TOKEN", ""),
 		OpenAIURL:      env.GetString("OPEN_AI_BASE_URL", "https://api.openai.com/v1"),
 		OpenAIKey:      env.GetString("OPEN_AI_KEY", ""),
 		AWSRegion:      env.GetString("AWS_REGION", "us-east-1"),
@@ -49,17 +52,11 @@ func LoadConfig() *Config {
 	}
 }
 
-func Wire(ctx context.Context, cfg *Config, appConfig *config.Config, logger *zerolog.Logger, owner, repo string) (*Dependencies, error) {
-	if cfg.GitHubToken == "" {
-		return nil, fmt.Errorf("GITHUB_TOKEN environment variable is required")
+func Wire(ctx context.Context, cfg *Config, appConfig *config.Config, logger *zerolog.Logger, ref review.PRReference) (*Dependencies, error) {
+	scmClient, err := CreateSCMClient(cfg, appConfig, ref)
+	if err != nil {
+		return nil, err
 	}
-
-	ghClient := github.New(github.Config{
-		Owner:   owner,
-		Repo:    repo,
-		Token:   cfg.GitHubToken,
-		BaseURL: appConfig.GitHub.BaseURL,
-	})
 
 	llmClient, err := CreateLLMClient(ctx, cfg)
 	if err != nil {
@@ -67,11 +64,35 @@ func Wire(ctx context.Context, cfg *Config, appConfig *config.Config, logger *ze
 	}
 
 	return &Dependencies{
-		SCMClient: ghClient,
+		SCMClient: scmClient,
 		LLMClient: llmClient,
 		AppConfig: appConfig,
 		Logger:    logger,
 	}, nil
+}
+
+// CreateSCMClient creates the appropriate SCM client based on the PR provider.
+func CreateSCMClient(cfg *Config, appConfig *config.Config, ref review.PRReference) (scm.Client, error) {
+	switch ref.Provider {
+	case review.ProviderGitHub:
+		if cfg.GitHubToken == "" {
+			return nil, fmt.Errorf("GITHUB_TOKEN environment variable is required for GitHub PRs")
+		}
+		return github.New(github.Config{
+			Owner:   ref.Owner,
+			Repo:    ref.Repo,
+			Token:   cfg.GitHubToken,
+			BaseURL: appConfig.GitHub.BaseURL,
+		}), nil
+	case review.ProviderBitbucket:
+		if cfg.BitbucketToken == "" {
+			return nil, fmt.Errorf("BITBUCKET_TOKEN environment variable is required for Bitbucket PRs")
+		}
+		// TODO: implement bitbucket.New() in internal/scm/bitbucket/
+		return nil, fmt.Errorf("Bitbucket SCM client not yet implemented")
+	default:
+		return nil, fmt.Errorf("unsupported SCM provider: %s", ref.Provider)
+	}
 }
 
 func CreateLLMClient(ctx context.Context, cfg *Config) (llm.LLMClient, error) {

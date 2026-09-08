@@ -11,11 +11,16 @@ import (
 )
 
 type Config struct {
-	GitHub GitHubConfig `yaml:"github"`
-	Review ReviewConfig `yaml:"review"`
+	GitHub    GitHubConfig    `yaml:"github"`
+	Bitbucket BitbucketConfig `yaml:"bitbucket"`
+	Review    ReviewConfig    `yaml:"review"`
 }
 
 type GitHubConfig struct {
+	BaseURL string `yaml:"base_url"`
+}
+
+type BitbucketConfig struct {
 	BaseURL string `yaml:"base_url"`
 }
 
