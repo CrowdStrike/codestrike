@@ -14,5 +14,6 @@ func RegisterRoutes(container *restful.Container, handler *Handler) {
 	ws.Path("/api/v1").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
+	ws.Route(ws.POST("review").To(handler.Review))
 	container.Add(ws)
 }
