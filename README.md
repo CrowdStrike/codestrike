@@ -41,6 +41,7 @@ Required variables:
 | `OPEN_AI_BASE_URL` | OpenAI-compatible API base URL (default: `https://api.openai.com/v1`) |
 | `OPEN_AI_KEY` | OpenAI API key (or compatible provider) |
 | `LOG_LEVEL` | Log level: `debug`, `info`, `warn`, `error` (default: `info`) |
+| `HTTP_LISTENING_PORT` | Port for `codestrike serve` (default: `8080`) |
 
 ### 3. Review application config
 
@@ -146,6 +147,34 @@ Example with persona and full context:
 ```bash
 ./codestrike review --persona security --full-context https://github.com/{owner}/{repo}/pull/{number}
 ```
+
+### 6. Run as a service
+
+codestrike can also run as a persistent HTTP service, allowing external systems (CI
+pipelines, webhooks, chatbots) to trigger reviews via API:
+
+```bash
+./codestrike serve
+```
+
+By default the server listens on `:8080`. Override with `--addr` or the
+`HTTP_LISTENING_PORT` environment variable:
+
+```bash
+./codestrike serve --addr :9090
+```
+
+#### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/healthz` | Health check — returns `{"status":"ok"}` |
+| `POST` | `/api/v1/review` | Run an AI review on a pull request |
+
+#### Graceful shutdown
+
+The server shuts down cleanly on `SIGINT` or `SIGTERM`, draining in-flight
+requests for up to 10 seconds.
 
 #### Chain-of-thought reasoning
 

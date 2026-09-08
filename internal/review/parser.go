@@ -12,11 +12,11 @@ type PRReference struct {
 	Number int
 }
 
-func ParsePRReference(owner, repo string, number int) PRReference {
+func ParsePrReference(owner, repo string, number int) PRReference {
 	return PRReference{Owner: owner, Repo: repo, Number: number}
 }
 
-func ParsePRURL(url string) (PRReference, error) {
+func ParsePrUrl(url string) (PRReference, error) {
 	url = strings.TrimRight(url, "/")
 
 	// Expected: https://github.com/{owner}/{repo}/pull/{number}

@@ -13,7 +13,7 @@ func TestNewRootCmd_HasExpectedSubcommands(t *testing.T) {
 		t.Error("expected root command to report errors")
 	}
 
-	want := map[string]bool{"init": true, "review": true, "version": true}
+	want := map[string]bool{"init": true, "review": true, "version": true, "serve": true}
 	got := map[string]bool{}
 	for _, cmd := range root.Commands() {
 		got[cmd.Name()] = true

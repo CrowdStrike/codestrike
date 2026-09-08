@@ -42,7 +42,7 @@ func TestParsePRURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := review.ParsePRURL(tt.url)
+			got, err := review.ParsePrUrl(tt.url)
 			if tt.wantErr {
 				if err == nil {
 					t.Fatal("expected error")

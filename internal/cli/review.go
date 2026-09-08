@@ -63,7 +63,7 @@ func newReviewCmd() *cobra.Command {
 				appConfig.Review.SystemPrompt = string(data)
 			}
 
-			ref, err := review.ParsePRURL(args[0])
+			ref, err := review.ParsePrUrl(args[0])
 			if err != nil {
 				return fmt.Errorf("parsing PR URL: %w", err)
 			}
