@@ -26,7 +26,7 @@ func setupContainer(t *testing.T) *restful.Container {
 func TestHealthz(t *testing.T) {
 	container := setupContainer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/healthz", nil)
 	rec := httptest.NewRecorder()
 	container.ServeHTTP(rec, req)
 
@@ -51,7 +51,7 @@ func TestHealthz(t *testing.T) {
 func TestHealthz_MethodNotAllowed(t *testing.T) {
 	container := setupContainer(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/healthz", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/healthz", nil)
 	rec := httptest.NewRecorder()
 	container.ServeHTTP(rec, req)
 
@@ -63,7 +63,7 @@ func TestHealthz_MethodNotAllowed(t *testing.T) {
 func TestHealthz_ContentType(t *testing.T) {
 	container := setupContainer(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/healthz", nil)
 	rec := httptest.NewRecorder()
 	container.ServeHTTP(rec, req)
 

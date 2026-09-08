@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.43.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.36
 	github.com/aws/aws-sdk-go-v2/service/bedrockruntime v1.57.2
+	github.com/emicklei/go-restful-openapi/v2 v2.12.1
 	github.com/joho/godotenv v1.5.1
 	github.com/openai/openai-go v1.12.0
 	github.com/pkoukk/tiktoken-go v0.1.8
@@ -14,7 +15,22 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 )
 
-require github.com/stretchr/testify v1.11.1 // indirect
+require (
+	github.com/erraggy/oastools v1.36.1 // indirect
+	github.com/go-openapi/jsonpointer v0.22.4 // indirect
+	github.com/go-openapi/jsonreference v0.21.4 // indirect
+	github.com/go-openapi/spec v0.22.2 // indirect
+	github.com/go-openapi/swag/conv v0.25.4 // indirect
+	github.com/go-openapi/swag/jsonname v0.25.4 // indirect
+	github.com/go-openapi/swag/jsonutils v0.25.4 // indirect
+	github.com/go-openapi/swag/loading v0.25.4 // indirect
+	github.com/go-openapi/swag/stringutils v0.25.4 // indirect
+	github.com/go-openapi/swag/typeutils v0.25.4 // indirect
+	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.3 // indirect
+	golang.org/x/text v0.32.0 // indirect
+)
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.17 // indirect

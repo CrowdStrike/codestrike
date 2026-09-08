@@ -168,7 +168,8 @@ By default the server listens on `:8080`. Override with `--addr` or the
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/healthz` | Health check — returns `{"status":"ok"}` |
+| `GET` | `/api/v1/healthz` | Health check — returns `{"status":"ok"}` |
+| `POST` | `/api/v1/review` | Run an AI review on a pull request |
 
 #### Graceful shutdown
 
