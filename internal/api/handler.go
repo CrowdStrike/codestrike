@@ -16,7 +16,7 @@ import (
 
 type Handler struct {
 	llmClient llm.LLMClient
-	appConfig config.Config
+	appConfig *config.Config
 	ghToken   string
 	logger    *zerolog.Logger
 }
@@ -24,7 +24,7 @@ type Handler struct {
 func NewHandler(llmClient llm.LLMClient, appConfig *config.Config, ghToken string, log *zerolog.Logger) *Handler {
 	return &Handler{
 		llmClient: llmClient,
-		appConfig: *appConfig,
+		appConfig: appConfig,
 		ghToken:   ghToken,
 		logger:    log,
 	}
@@ -73,7 +73,7 @@ func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 	})
 
 	tok := tokenizer.NewForModel(h.appConfig.Review.Context.TokenizerModel)
-	pipeline := review.NewPipeline(ghClient, h.llmClient, &h.appConfig, tok, h.logger, review.Options{
+	pipeline := review.NewPipeline(ghClient, h.llmClient, h.appConfig, tok, h.logger, review.Options{
 		FullContext: body.FullContext,
 	})
 
