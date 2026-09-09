@@ -9,7 +9,7 @@ import (
 	appcontext "github.com/CrowdStrike/codestrike/internal/context"
 )
 
-func TestDiscoverCursorContext_ReadsAgentsMdAndAlwaysApplyRules(t *testing.T) {
+func TestLoadCursorContext_ReadsAgentsMdAndAlwaysApplyRules(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "AGENTS.md", "# Project Instructions\nUse snake_case.\n")
 
@@ -20,7 +20,7 @@ func TestDiscoverCursorContext_ReadsAgentsMdAndAlwaysApplyRules(t *testing.T) {
 	writeFile(t, rulesDir, "always.mdc", "---\nalwaysApply: true\n---\n\nAlways follow this rule.\n")
 	writeFile(t, rulesDir, "no-frontmatter-fields.mdc", "---\ndescription: agent decides\n---\n\nAgent-decided rule body.\n")
 
-	got := appcontext.DiscoverCursorContext(dir)
+	got := appcontext.LoadCursorContext(dir)
 
 	if !strings.Contains(got, "### AGENTS.md") || !strings.Contains(got, "Use snake_case.") {
 		t.Errorf("expected AGENTS.md content in output, got: %q", got)
@@ -33,7 +33,7 @@ func TestDiscoverCursorContext_ReadsAgentsMdAndAlwaysApplyRules(t *testing.T) {
 	}
 }
 
-func TestDiscoverCursorContext_SkipsGlobScopedAndDisabledRules(t *testing.T) {
+func TestLoadCursorContext_SkipsGlobScopedAndDisabledRules(t *testing.T) {
 	dir := t.TempDir()
 	rulesDir := filepath.Join(dir, ".cursor", "rules")
 	if err := os.MkdirAll(rulesDir, 0755); err != nil {
@@ -43,7 +43,7 @@ func TestDiscoverCursorContext_SkipsGlobScopedAndDisabledRules(t *testing.T) {
 	writeFile(t, rulesDir, "disabled.mdc", "---\nalwaysApply: false\n---\n\nManual only.\n")
 	writeFile(t, rulesDir, "not-a-rule.md", "not an mdc file\n")
 
-	got := appcontext.DiscoverCursorContext(dir)
+	got := appcontext.LoadCursorContext(dir)
 
 	if strings.Contains(got, "scoped.mdc") || strings.Contains(got, "Only for tsx files.") {
 		t.Errorf("expected glob-scoped rule to be excluded, got: %q", got)
@@ -56,17 +56,17 @@ func TestDiscoverCursorContext_SkipsGlobScopedAndDisabledRules(t *testing.T) {
 	}
 }
 
-func TestDiscoverCursorContext_MissingDirReturnsEmptyNoError(t *testing.T) {
+func TestLoadCursorContext_MissingDirReturnsEmptyNoError(t *testing.T) {
 	dir := t.TempDir()
 
-	got := appcontext.DiscoverCursorContext(dir)
+	got := appcontext.LoadCursorContext(dir)
 
 	if got != "" {
 		t.Errorf("expected empty result for repo with no AGENTS.md/.cursor/rules, got: %q", got)
 	}
 }
 
-func TestDiscoverCursorContext_SkipsFileWithoutFrontmatter(t *testing.T) {
+func TestLoadCursorContext_SkipsFileWithoutFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 	rulesDir := filepath.Join(dir, ".cursor", "rules")
 	if err := os.MkdirAll(rulesDir, 0755); err != nil {
@@ -74,7 +74,7 @@ func TestDiscoverCursorContext_SkipsFileWithoutFrontmatter(t *testing.T) {
 	}
 	writeFile(t, rulesDir, "plain.mdc", "Just plain text, no frontmatter delimiters.\n")
 
-	got := appcontext.DiscoverCursorContext(dir)
+	got := appcontext.LoadCursorContext(dir)
 
 	if got != "" {
 		t.Errorf("expected file without frontmatter to be skipped, got: %q", got)

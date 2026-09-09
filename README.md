@@ -115,7 +115,7 @@ review:
 | `context.reserved_output_tokens` | Tokens reserved for the model's response (default: `4096`) |
 | `context.tokenizer_model` | Tiktoken encoding used for token counting (default: `o200k_base`) |
 | `context.model_limits` | Per-model context window and max output token settings |
-| `context.discover_cursor_rules` | When `true`, also read `AGENTS.md` and `.cursor/rules/*.mdc` (rules with `alwaysApply: true`, or no `globs`/`alwaysApply` frontmatter at all) from the reviewed repo as additional project context. Default: `false` |
+| `context.enable_cursor_rules` | When `true`, also read `AGENTS.md` and `.cursor/rules/*.mdc` (rules with `alwaysApply: true`, or no `globs`/`alwaysApply` frontmatter at all) from the reviewed repo as additional project context. Default: `false` |
 
 ### 4. Build
 
@@ -194,7 +194,7 @@ go install ./cmd/codestrike
 ln -s "$(pwd)" ~/.cursor/plugins/local/codestrike
 ```
 
-Reload Cursor (`Developer: Reload Window`) and confirm `pr-review` appears under **Customize → Skills**. codestrike's own review pipeline can also read Cursor-native project instructions (`AGENTS.md`, `.cursor/rules/*.mdc`) from the reviewed repo — see `context.discover_cursor_rules` above. See [`docs/cursor-integration.md`](docs/cursor-integration.md) for details and planned follow-up work (an MCP server).
+Reload Cursor (`Developer: Reload Window`) and confirm `pr-review` appears under **Customize → Skills**. codestrike's own review pipeline can also read Cursor-native project instructions (`AGENTS.md`, `.cursor/rules/*.mdc`) from the reviewed repo — see `context.enable_cursor_rules` above. See [`docs/cursor-integration.md`](docs/cursor-integration.md) for details and planned follow-up work (an MCP server).
 
 ## Development
 

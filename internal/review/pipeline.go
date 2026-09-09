@@ -366,13 +366,13 @@ func (p *Pipeline) loadProjectContext() string {
 	var sb strings.Builder
 	sb.WriteString(p.loadContextFiles())
 
-	if p.config.Review.Context.DiscoverCursorRules {
+	if p.config.Review.Context.EnableCursorRules {
 		cwd, err := os.Getwd()
 		if err != nil {
 			p.logger.Debug().Err(err).Msg("could not determine working directory for cursor rule discovery")
 			return sb.String()
 		}
-		sb.WriteString(appcontext.DiscoverCursorContext(cwd))
+		sb.WriteString(appcontext.LoadCursorContext(cwd))
 	}
 
 	return sb.String()

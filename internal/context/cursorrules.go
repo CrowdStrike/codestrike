@@ -59,11 +59,11 @@ func isUnconditionallyApplicable(fm cursorRuleFrontmatter) bool {
 	return strings.TrimSpace(fm.Globs) == ""
 }
 
-// DiscoverCursorContext reads AGENTS.md and applicable .cursor/rules/*.mdc
+// LoadCursorContext reads AGENTS.md and applicable .cursor/rules/*.mdc
 // files from repoRoot (root level only, not recursive) and returns their
 // concatenated content formatted as "### <name>" sections, consistent with
 // how project context_files are rendered.
-func DiscoverCursorContext(repoRoot string) string {
+func LoadCursorContext(repoRoot string) string {
 	var sb strings.Builder
 
 	if data, err := os.ReadFile(filepath.Join(repoRoot, "AGENTS.md")); err == nil {
