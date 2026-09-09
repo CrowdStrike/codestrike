@@ -293,8 +293,8 @@ func bitbucketAPIError(resp *http.Response) error {
 		} `json:"error"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&apiError); err == nil && apiError.Error.Message != "" {
-		return fmt.Errorf("Bitbucket API returned %s: %s", resp.Status, apiError.Error.Message)
+		return fmt.Errorf("bitbucket API returned %s: %s", resp.Status, apiError.Error.Message)
 	}
 
-	return fmt.Errorf("Bitbucket API returned %s", resp.Status)
+	return fmt.Errorf("bitbucket API returned %s", resp.Status)
 }
