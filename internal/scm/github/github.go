@@ -98,6 +98,37 @@ func (c *Client) PullRequestExists(ctx context.Context, number int) (bool, error
 	return true, nil
 }
 
+func (c *Client) GetPullRequestDescription(ctx context.Context, number int) (string, string, error) {
+	url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d", c.config.BaseURL, c.config.Owner, c.config.Repo, number)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github.v3+json")
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+
+	var pr struct {
+		Title string `json:"title"`
+		Body  string `json:"body"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return "", "", fmt.Errorf("decoding response: %w", err)
+	}
+
+	return pr.Title, pr.Body, nil
+}
+
 func (c *Client) PublishComment(ctx context.Context, number int, body string) error {
 	url := fmt.Sprintf("%s/repos/%s/%s/issues/%d/comments", c.config.BaseURL, c.config.Owner, c.config.Repo, number)
 

@@ -55,6 +55,20 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	}
 	p.logger.Info().Int("pr", ref.Number).Msg("pull request found")
 
+	// Step 1b: Fetch PR description
+	prDescription := ""
+	if title, body, err := p.client.GetPullRequestDescription(ctx, ref.Number); err != nil {
+		p.logger.Warn().Err(err).Msg("failed to fetch PR description, continuing without")
+	} else {
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "**Title:** %s\n", title)
+		if body != "" {
+			sb.WriteString(body)
+			sb.WriteString("\n")
+		}
+		prDescription = sb.String()
+	}
+
 	// Step 2: Fetch PR files
 	files, err := p.client.GetPullRequestFiles(ctx, ref.Number)
 	if err != nil {
@@ -90,7 +104,7 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	// Memory context (deferred — not yet implemented)
 	memoryContext := ""
 
-	result := builder.Build(filtered, ownComments, userFeedback, memoryContext, projectContext)
+	result := builder.Build(filtered, ownComments, userFeedback, memoryContext, projectContext, prDescription)
 	p.logger.Info().
 		Int("total_tokens", result.TotalTokens).
 		Int("skipped_files", len(result.SkippedFiles)).

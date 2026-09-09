@@ -72,6 +72,39 @@ func (c *Client) PullRequestExists(ctx context.Context, number int) (bool, error
 	return true, nil
 }
 
+func (c *Client) GetPullRequestDescription(ctx context.Context, number int) (string, string, error) {
+	url := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d",
+		c.config.BaseURL, c.config.Workspace, c.config.RepoSlug, number)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("creating request: %w", err)
+	}
+	c.setAuth(req)
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("executing request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+
+	var pr struct {
+		Title   string `json:"title"`
+		Summary struct {
+			Raw string `json:"raw"`
+		} `json:"summary"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return "", "", fmt.Errorf("decoding response: %w", err)
+	}
+
+	return pr.Title, pr.Summary.Raw, nil
+}
+
 func (c *Client) GetPullRequestDiff(ctx context.Context, number int) (string, error) {
 	url := fmt.Sprintf("%s/repositories/%s/%s/pullrequests/%d/diff",
 		c.config.BaseURL, c.config.Workspace, c.config.RepoSlug, number)

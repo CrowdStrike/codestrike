@@ -62,7 +62,7 @@ func TestBuilder_SmallPR_FitsInBudget(t *testing.T) {
 		{Filename: "b.go", Status: "added", Patch: "another small patch"},
 	}
 
-	result := builder.Build(files, "", "", "", "")
+	result := builder.Build(files, "", "", "", "", "")
 	if len(result.SkippedFiles) != 0 {
 		t.Errorf("expected 0 skipped files, got %d", len(result.SkippedFiles))
 	}
@@ -90,7 +90,7 @@ func TestBuilder_LargePR_SkipsFiles(t *testing.T) {
 		{Filename: "big.go", Status: "modified", Patch: strings.Repeat("word ", 500)},
 	}
 
-	result := builder.Build(files, "", "", "", "")
+	result := builder.Build(files, "", "", "", "", "")
 	if len(result.SkippedFiles) == 0 {
 		t.Error("expected some files to be skipped due to tight budget")
 	}
@@ -112,7 +112,7 @@ func TestBuilder_IncludesExistingComments(t *testing.T) {
 	}
 
 	comments := "- [a.go:10] \"missing error check\" — reviewer: codestrike"
-	result := builder.Build(files, comments, "", "", "")
+	result := builder.Build(files, comments, "", "", "", "")
 
 	if !strings.Contains(result.Prompt, "do NOT repeat") {
 		t.Error("expected prompt to contain dedup instructions for own comments")
@@ -138,7 +138,7 @@ func TestBuilder_WrapsUserFeedbackAsUntrusted(t *testing.T) {
 	}
 
 	feedback := "- (general) \"this was a false positive\" — author: someuser\n"
-	result := builder.Build(files, "", feedback, "", "")
+	result := builder.Build(files, "", feedback, "", "", "")
 
 	if !strings.Contains(result.Prompt, "<untrusted-content source=\"user-feedback\">") {
 		t.Error("expected prompt to contain opening untrusted-content tag")
@@ -169,7 +169,7 @@ func TestBuilder_OmitsUntrustedTagsWhenNoFeedback(t *testing.T) {
 		{Filename: "a.go", Status: "modified", Patch: "change"},
 	}
 
-	result := builder.Build(files, "", "", "", "")
+	result := builder.Build(files, "", "", "", "", "")
 
 	if strings.Contains(result.Prompt, "<untrusted-content source=") {
 		t.Error("expected prompt to NOT contain untrusted-content wrapper when no feedback")
