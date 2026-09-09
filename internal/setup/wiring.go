@@ -14,6 +14,7 @@ import (
 	"github.com/CrowdStrike/codestrike/internal/llm/openaiplatform"
 	"github.com/CrowdStrike/codestrike/internal/review"
 	"github.com/CrowdStrike/codestrike/internal/scm"
+	"github.com/CrowdStrike/codestrike/internal/scm/bitbucket"
 	"github.com/CrowdStrike/codestrike/internal/scm/github"
 )
 
@@ -88,8 +89,12 @@ func CreateSCMClient(cfg *Config, appConfig *config.Config, ref review.PRReferen
 		if cfg.BitbucketToken == "" {
 			return nil, fmt.Errorf("BITBUCKET_TOKEN environment variable is required for Bitbucket PRs")
 		}
-		// TODO: implement bitbucket.New() in internal/scm/bitbucket/
-		return nil, fmt.Errorf("Bitbucket SCM client not yet implemented")
+		return bitbucket.New(bitbucket.Config{
+			Workspace: ref.Owner,
+			RepoSlug:  ref.Repo,
+			Token:     cfg.BitbucketToken,
+			BaseURL:   appConfig.Bitbucket.BaseURL,
+		}), nil
 	default:
 		return nil, fmt.Errorf("unsupported SCM provider: %s", ref.Provider)
 	}

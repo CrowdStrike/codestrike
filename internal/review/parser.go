@@ -20,10 +20,10 @@ type PRReference struct {
 
 func ParsePrReference(owner, repo string, number int) PRReference {
 	return PRReference{
-		Provider: ProviderGitHub, 
-		Owner: owner, 
-		Repo: repo, 
-		Number: number,
+		Provider: ProviderGitHub,
+		Owner:    owner,
+		Repo:     repo,
+		Number:   number,
 	}
 }
 
