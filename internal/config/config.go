@@ -32,6 +32,7 @@ type ContextConfig struct {
 	ReservedOutputTokens int                   `yaml:"reserved_output_tokens"`
 	TokenizerModel       string                `yaml:"tokenizer_model"`
 	ModelLimits          map[string]ModelLimit `yaml:"model_limits"`
+	EnableCursorRules    bool                  `yaml:"enable_cursor_rules"`
 }
 
 type ModelLimit struct {
