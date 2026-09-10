@@ -12,12 +12,13 @@ import (
 
 	"github.com/CrowdStrike/codestrike/internal/api"
 	"github.com/CrowdStrike/codestrike/internal/config"
+	"github.com/CrowdStrike/codestrike/internal/setup"
 )
 
 func setupContainer(t *testing.T) *restful.Container {
 	t.Helper()
 	log := zerolog.Nop()
-	handler := api.NewHandler(nil, &config.Config{}, "", &log)
+	handler := api.NewHandler(nil, &config.Config{}, &setup.Config{}, &log)
 	container := restful.NewContainer()
 	api.RegisterRoutes(container, handler)
 	return container

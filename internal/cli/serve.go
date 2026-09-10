@@ -35,8 +35,8 @@ func newServeCmd() *cobra.Command {
 				return err
 			}
 
-			if envCfg.GitHubToken == "" {
-				return fmt.Errorf("GITHUB_TOKEN environment variable is required")
+			if envCfg.GitHubToken == "" && envCfg.BitbucketToken == "" {
+				return fmt.Errorf("GITHUB_TOKEN or BITBUCKET_TOKEN environment variable is required")
 			}
 
 			llmClient, err := setup.CreateLLMClient(cmd.Context(), envCfg)
@@ -49,7 +49,7 @@ func newServeCmd() *cobra.Command {
 				addr = ":" + envCfg.ListenHttpPort
 			}
 
-			handler := api.NewHandler(llmClient, appConfig, envCfg.GitHubToken, &log)
+			handler := api.NewHandler(llmClient, appConfig, envCfg, &log)
 			container := restful.NewContainer()
 			api.RegisterRoutes(container, handler)
 

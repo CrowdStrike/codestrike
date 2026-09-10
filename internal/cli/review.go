@@ -68,7 +68,7 @@ func newReviewCmd() *cobra.Command {
 				return fmt.Errorf("parsing PR URL: %w", err)
 			}
 
-			deps, err := setup.Wire(cmd.Context(), envCfg, appConfig, &log, ref.Owner, ref.Repo)
+			deps, err := setup.Wire(cmd.Context(), envCfg, appConfig, &log, ref)
 			if err != nil {
 				return fmt.Errorf("wiring dependencies: %w", err)
 			}

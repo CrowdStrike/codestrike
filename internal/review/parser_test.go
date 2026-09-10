@@ -16,12 +16,22 @@ func TestParsePRURL(t *testing.T) {
 		{
 			name: "standard github URL",
 			url:  "https://github.com/CrowdStrike/codestrike/pull/42",
-			want: review.PRReference{Owner: "CrowdStrike", Repo: "codestrike", Number: 42},
+			want: review.PRReference{Provider: review.ProviderGitHub, Owner: "CrowdStrike", Repo: "codestrike", Number: 42},
 		},
 		{
-			name: "trailing slash",
+			name: "github trailing slash",
 			url:  "https://github.com/owner/repo/pull/7/",
-			want: review.PRReference{Owner: "owner", Repo: "repo", Number: 7},
+			want: review.PRReference{Provider: review.ProviderGitHub, Owner: "owner", Repo: "repo", Number: 7},
+		},
+		{
+			name: "standard bitbucket URL",
+			url:  "https://bitbucket.org/workspace/my-repo/pull-requests/123",
+			want: review.PRReference{Provider: review.ProviderBitbucket, Owner: "workspace", Repo: "my-repo", Number: 123},
+		},
+		{
+			name: "bitbucket trailing slash",
+			url:  "https://bitbucket.org/workspace/repo/pull-requests/5/",
+			want: review.PRReference{Provider: review.ProviderBitbucket, Owner: "workspace", Repo: "repo", Number: 5},
 		},
 		{
 			name:    "invalid URL missing pull segment",
@@ -36,6 +46,16 @@ func TestParsePRURL(t *testing.T) {
 		{
 			name:    "too short URL",
 			url:     "https://github.com/pull/1",
+			wantErr: true,
+		},
+		{
+			name:    "invalid bitbucket PR number",
+			url:     "https://bitbucket.org/workspace/repo/pull-requests/abc",
+			wantErr: true,
+		},
+		{
+			name:    "too short bitbucket URL",
+			url:     "https://bitbucket.org/pull-requests/1",
 			wantErr: true,
 		},
 	}

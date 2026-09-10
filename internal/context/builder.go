@@ -30,7 +30,7 @@ func NewBuilder(tok tokenizer.Tokenizer, budget *Budget, cfg *config.Config) *Bu
 	}
 }
 
-func (b *Builder) Build(files []scm.PullRequestFile, ownComments, userFeedback, memoryContext, projectContext string) BuildResult {
+func (b *Builder) Build(files []scm.PullRequestFile, ownComments, userFeedback, memoryContext, projectContext, prDescription string) BuildResult {
 	systemSection := b.buildSystemSection()
 	systemTokens := b.tokenizer.CountTokens(systemSection)
 	projectTokens := b.tokenizer.CountTokens(projectContext)
@@ -59,7 +59,7 @@ func (b *Builder) Build(files []scm.PullRequestFile, ownComments, userFeedback, 
 		usedTokens += fileTokens
 	}
 
-	prompt := b.assemblePrompt(systemSection, projectContext, ownComments, userFeedback, memoryContext, included, skipped)
+	prompt := b.assemblePrompt(systemSection, projectContext, prDescription, ownComments, userFeedback, memoryContext, included, skipped)
 	totalTokens := b.tokenizer.CountTokens(prompt)
 
 	return BuildResult{
@@ -89,10 +89,16 @@ func (b *Builder) buildSystemSection() string {
 	return sb.String()
 }
 
-func (b *Builder) assemblePrompt(system, projectContext, ownComments, userFeedback, memory string, files []scm.PullRequestFile, skipped []string) string {
+func (b *Builder) assemblePrompt(system, projectContext, prDescription, ownComments, userFeedback, memory string, files []scm.PullRequestFile, skipped []string) string {
 	var sb strings.Builder
 	sb.WriteString(system)
 	sb.WriteString("\n")
+
+	if prDescription != "" {
+		sb.WriteString("\n## Pull Request Context\n")
+		sb.WriteString(prDescription)
+		sb.WriteString("\n")
+	}
 
 	if projectContext != "" {
 		sb.WriteString("\n## Project Conventions\n")

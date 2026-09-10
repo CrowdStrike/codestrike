@@ -10,27 +10,29 @@ import (
 	"github.com/CrowdStrike/codestrike/internal/config"
 	"github.com/CrowdStrike/codestrike/internal/llm"
 	"github.com/CrowdStrike/codestrike/internal/review"
-	"github.com/CrowdStrike/codestrike/internal/scm/github"
+	"github.com/CrowdStrike/codestrike/internal/setup"
 	"github.com/CrowdStrike/codestrike/internal/tokenizer"
 )
 
+// Handler holds shared dependencies for all API endpoints.
 type Handler struct {
 	llmClient llm.LLMClient
 	appConfig *config.Config
-	ghToken   string
+	envConfig *setup.Config
 	logger    *zerolog.Logger
 }
 
-func NewHandler(llmClient llm.LLMClient, appConfig *config.Config, ghToken string, log *zerolog.Logger) *Handler {
+// NewHandler creates a new API handler with shared dependencies.
+func NewHandler(llmClient llm.LLMClient, appConfig *config.Config, envConfig *setup.Config, log *zerolog.Logger) *Handler {
 	return &Handler{
 		llmClient: llmClient,
 		appConfig: appConfig,
-		ghToken:   ghToken,
+		envConfig: envConfig,
 		logger:    log,
 	}
 }
 
-// Healthz handles GET /healthz.
+// Healthz handles GET /api/v1/healthz.
 func (h *Handler) Healthz(req *restful.Request, resp *restful.Response) {
 	healthResponse := HealthResponse{
 		Status:  "ok",
@@ -65,15 +67,16 @@ func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 		return
 	}
 
-	ghClient := github.New(github.Config{
-		Owner:   ref.Owner,
-		Repo:    ref.Repo,
-		Token:   h.ghToken,
-		BaseURL: h.appConfig.GitHub.BaseURL,
-	})
+	scmClient, err := setup.CreateSCMClient(h.envConfig, h.appConfig, ref)
+	if err != nil {
+		_ = resp.WriteHeaderAndEntity(http.StatusBadRequest, ErrorResponse{
+			Error: fmt.Sprintf("creating SCM client: %v", err),
+		})
+		return
+	}
 
 	tok := tokenizer.NewForModel(h.appConfig.Review.Context.TokenizerModel)
-	pipeline := review.NewPipeline(ghClient, h.llmClient, h.appConfig, tok, h.logger, review.Options{
+	pipeline := review.NewPipeline(scmClient, h.llmClient, h.appConfig, tok, h.logger, review.Options{
 		FullContext: body.FullContext,
 	})
 
