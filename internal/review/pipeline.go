@@ -26,11 +26,13 @@ type Pipeline struct {
 	config      *config.Config
 	tokenizer   tokenizer.Tokenizer
 	fullContext bool
+	dryRun      bool
 	logger      *zerolog.Logger
 }
 
 type Options struct {
 	FullContext bool
+	DryRun      bool
 }
 
 func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, tok tokenizer.Tokenizer, logger *zerolog.Logger, opts Options) *Pipeline {
@@ -40,6 +42,7 @@ func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config,
 		config:      cfg,
 		tokenizer:   tok,
 		fullContext: opts.FullContext,
+		dryRun:      opts.DryRun,
 		logger:      logger,
 	}
 }
@@ -133,6 +136,12 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 
 	// Step 7: Post comments
 	body := formatComments(validated)
+	if p.dryRun {
+		fmt.Println(body)
+		p.logger.Info().Int("pr", ref.Number).Msg("review printed (dry run)")
+		return nil
+	}
+
 	if err := p.client.PublishComment(ctx, ref.Number, body); err != nil {
 		return fmt.Errorf("publishing comment: %w", err)
 	}

@@ -18,7 +18,7 @@ import (
 func newReviewCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "review <pr-url>",
-		Short: "Run an AI review on a pull request and post the result as a comment",
+		Short: "Run an AI review on a pull request and post the result as a comment (or print it with --dry-run)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_ = godotenv.Load()
@@ -39,6 +39,11 @@ func newReviewCmd() *cobra.Command {
 			persona, err := cmd.Flags().GetString("persona")
 			if err != nil {
 				return fmt.Errorf("reading --persona flag: %w", err)
+			}
+
+			dryRun, err := cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				return fmt.Errorf("reading --dry-run flag: %w", err)
 			}
 
 			configPath, err := config.ResolvePath(configFlag)
@@ -76,6 +81,7 @@ func newReviewCmd() *cobra.Command {
 			tok := tokenizer.NewForModel(appConfig.Review.Context.TokenizerModel)
 			pipeline := review.NewPipeline(deps.SCMClient, deps.LLMClient, deps.AppConfig, tok, deps.Logger, review.Options{
 				FullContext: fullContext,
+				DryRun:      dryRun,
 			})
 
 			return pipeline.Run(cmd.Context(), ref)
@@ -84,6 +90,7 @@ func newReviewCmd() *cobra.Command {
 
 	cmd.Flags().Bool("full-context", false, "Fetch full file content for richer reviews (slower, uses more tokens)")
 	cmd.Flags().String("persona", "", "Review persona — maps to a prompt file in prompts/ (e.g., security, performance)")
+	cmd.Flags().Bool("dry-run", false, "Print the review to stdout instead of posting it as a PR comment")
 
 	return cmd
 }
