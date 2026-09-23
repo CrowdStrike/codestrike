@@ -26,11 +26,13 @@ type Pipeline struct {
 	config      *config.Config
 	tokenizer   tokenizer.Tokenizer
 	fullContext bool
+	dryRun      bool
 	logger      *zerolog.Logger
 }
 
 type Options struct {
 	FullContext bool
+	DryRun      bool
 }
 
 func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config, tok tokenizer.Tokenizer, logger *zerolog.Logger, opts Options) *Pipeline {
@@ -40,18 +42,19 @@ func NewPipeline(client scm.Client, llmClient llm.LLMClient, cfg *config.Config,
 		config:      cfg,
 		tokenizer:   tok,
 		fullContext: opts.FullContext,
+		dryRun:      opts.DryRun,
 		logger:      logger,
 	}
 }
 
-func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
+func (p *Pipeline) Run(ctx context.Context, ref PRReference) (string, error) {
 	// Step 1: Verify PR exists
 	exists, err := p.client.PullRequestExists(ctx, ref.Number)
 	if err != nil {
-		return fmt.Errorf("checking PR existence: %w", err)
+		return "", fmt.Errorf("checking PR existence: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("pull request #%d not found in %s/%s", ref.Number, ref.Owner, ref.Repo)
+		return "", fmt.Errorf("pull request #%d not found in %s/%s", ref.Number, ref.Owner, ref.Repo)
 	}
 	p.logger.Info().Int("pr", ref.Number).Msg("pull request found")
 
@@ -72,7 +75,7 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	// Step 2: Fetch PR files
 	files, err := p.client.GetPullRequestFiles(ctx, ref.Number)
 	if err != nil {
-		return fmt.Errorf("fetching PR files: %w", err)
+		return "", fmt.Errorf("fetching PR files: %w", err)
 	}
 	p.logger.Info().Int("total_files", len(files)).Msg("fetched PR files")
 
@@ -82,7 +85,7 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 
 	if len(filtered) == 0 {
 		p.logger.Warn().Msg("no files to review after applying guardrails")
-		return nil
+		return "", nil
 	}
 
 	// Step 3b: Fetch full file content if requested
@@ -119,7 +122,7 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 	// Step 5: Run inference
 	comments, err := p.runInference(ctx, result.Prompt, result.OutputMaxToken)
 	if err != nil {
-		return fmt.Errorf("running inference: %w", err)
+		return "", fmt.Errorf("running inference: %w", err)
 	}
 
 	// Step 6: Validate output
@@ -128,17 +131,22 @@ func (p *Pipeline) Run(ctx context.Context, ref PRReference) error {
 
 	if len(validated) == 0 {
 		p.logger.Info().Msg("no actionable comments to post")
-		return nil
+		return "", nil
 	}
 
 	// Step 7: Post comments
 	body := formatComments(validated)
+	if p.dryRun {
+		p.logger.Info().Int("pr", ref.Number).Msg("review computed (dry run)")
+		return body, nil
+	}
+
 	if err := p.client.PublishComment(ctx, ref.Number, body); err != nil {
-		return fmt.Errorf("publishing comment: %w", err)
+		return "", fmt.Errorf("publishing comment: %w", err)
 	}
 	p.logger.Info().Int("pr", ref.Number).Msg("review posted")
 
-	return nil
+	return "", nil
 }
 
 func (p *Pipeline) createBudget() *appcontext.Budget {

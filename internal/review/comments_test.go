@@ -14,6 +14,13 @@ import (
 type mockClient struct {
 	generalComments []scm.PRComment
 	reviewComments  []scm.PRComment
+	files           []scm.PullRequestFile
+	publishCalls    []publishCall
+}
+
+type publishCall struct {
+	number int
+	body   string
 }
 
 func (m *mockClient) GetPRComments(_ context.Context, _ int) ([]scm.PRComment, error) {
@@ -26,11 +33,14 @@ func (m *mockClient) GetPRReviewComments(_ context.Context, _ int) ([]scm.PRComm
 
 func (m *mockClient) GetPullRequestDiff(_ context.Context, _ int) (string, error) { return "", nil }
 func (m *mockClient) GetPullRequestFiles(_ context.Context, _ int) ([]scm.PullRequestFile, error) {
-	return nil, nil
+	return m.files, nil
 }
 func (m *mockClient) GetFileContent(_ context.Context, _, _ string) (string, error) { return "", nil }
 func (m *mockClient) PullRequestExists(_ context.Context, _ int) (bool, error)      { return true, nil }
-func (m *mockClient) PublishComment(_ context.Context, _ int, _ string) error       { return nil }
+func (m *mockClient) PublishComment(_ context.Context, number int, body string) error {
+	m.publishCalls = append(m.publishCalls, publishCall{number: number, body: body})
+	return nil
+}
 func (m *mockClient) GetPullRequestDescription(_ context.Context, _ int) (string, string, error) {
 	return "", "", nil
 }
