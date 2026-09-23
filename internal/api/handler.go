@@ -80,7 +80,7 @@ func (h *Handler) Review(req *restful.Request, resp *restful.Response) {
 		FullContext: body.FullContext,
 	})
 
-	if err := pipeline.Run(req.Request.Context(), ref); err != nil {
+	if _, err := pipeline.Run(req.Request.Context(), ref); err != nil {
 		h.logger.Error().Err(err).Str("pr_url", body.PrUrl).Msg("review failed")
 		_ = resp.WriteHeaderAndEntity(http.StatusInternalServerError, ErrorResponse{
 			Error: fmt.Sprintf("review failed: %v", err),

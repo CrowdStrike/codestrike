@@ -84,7 +84,14 @@ func newReviewCmd() *cobra.Command {
 				DryRun:      dryRun,
 			})
 
-			return pipeline.Run(cmd.Context(), ref)
+			body, err := pipeline.Run(cmd.Context(), ref)
+			if err != nil {
+				return err
+			}
+			if body != "" {
+				fmt.Println(body)
+			}
+			return nil
 		},
 	}
 
