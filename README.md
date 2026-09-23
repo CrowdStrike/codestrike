@@ -142,6 +142,7 @@ Or point at a specific config file with `--config`:
 | `--config <path>` | Path to a YAML config file |
 | `--full-context` | Fetch full file content for richer reviews (slower, uses more tokens) |
 | `--persona <name>` | Select a review persona — maps to a prompt file in `prompts/` (e.g., `security`, `performance`) |
+| `--dry-run` | Print the review to stdout instead of posting it as a PR comment |
 
 Example with persona and full context:
 
