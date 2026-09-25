@@ -1,3 +1,5 @@
+import { execFileSync } from 'child_process';
+import { rmSync } from 'fs';
 import type { SCMClient, PullRequestFile, PRComment } from './types.js';
 
 interface BitbucketConfig {
@@ -13,6 +15,23 @@ export class BitbucketClient implements SCMClient {
   constructor(cfg: BitbucketConfig) {
     this.config = { ...cfg };
     if (!this.config.baseURL) this.config.baseURL = 'https://api.bitbucket.org/2.0';
+  }
+
+  async cloneRepo(number: number, targetDir: string): Promise<string> {
+    const url = `${this.config.baseURL}/repositories/${this.config.workspace}/${this.config.repoSlug}/pullrequests/${number}`;
+    const resp = await fetch(url, { headers: this.headers() });
+    if (!resp.ok) throw new Error(`unexpected status ${resp.status}`);
+    const pr = (await resp.json()) as { source: { branch: { name: string } } };
+    const branch = pr.source.branch.name;
+
+    const cloneUrl = `git@bitbucket.org:${this.config.workspace}/${this.config.repoSlug}.git`;
+    execFileSync('git', ['clone', '--depth', '50', '--branch', branch, cloneUrl, targetDir], { stdio: 'pipe' });
+
+    return targetDir;
+  }
+
+  cleanupRepo(dir: string): void {
+    rmSync(dir, { recursive: true, force: true });
   }
 
   private headers(): Record<string, string> {

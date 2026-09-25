@@ -9,6 +9,7 @@ import { Pipeline } from '../review/pipeline.js';
 import { loadEnvConfig, wire } from '../setup.js';
 import { createLogger } from '../logger.js';
 import { newForModel } from '../tokenizer.js';
+import * as os from 'os';
 
 export function reviewCommand(): Command {
   const cmd = new Command('review')
@@ -39,15 +40,29 @@ export function reviewCommand(): Command {
       const ref = parsePrUrl(prUrl);
       const deps = wire(envCfg, appConfig, logger, ref);
 
-      const tok = newForModel(appConfig.review.context.tokenizer_model);
-      const pipeline = new Pipeline(deps.scmClient, deps.llmClient, deps.appConfig, tok, deps.logger, {
-        fullContext: opts.fullContext,
-        dryRun: opts.dryRun,
-      });
-
-      const body = await pipeline.run(ref);
-      if (body) console.log(body);
+      if (deps.agenticClient) {
+        const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codestrike-'));
+        const repoDir = await deps.scmClient.cloneRepo(ref.number, tmpDir);
+        try {
+          const body = await deps.agenticClient.review(appConfig.review.system_prompt, envCfg.modelID, repoDir);
+          if (body) {
+            logger.info(body);
+            if (!opts.dryRun) await deps.scmClient.publishComment(ref.number, body);
+          }
+        } finally {
+          deps.scmClient.cleanupRepo(repoDir);
+        }
+      } else if (deps.llmClient) {
+        const tok = newForModel(appConfig.review.context.tokenizer_model);
+        const pipeline = new Pipeline(deps.scmClient, deps.llmClient, deps.appConfig, tok, deps.logger, {
+          fullContext: opts.fullContext,
+          dryRun: opts.dryRun,
+        });
+        const body = await pipeline.run(ref);
+        if (body) console.log(body);
+      } else {
+        throw new Error('No review client configured');
+      }
     });
-
   return cmd;
 }

@@ -1,3 +1,5 @@
+import { execFileSync } from 'child_process';
+import { rmSync } from 'fs';
 import type { SCMClient, PullRequestFile, PRComment } from './types.js';
 
 interface GitHubConfig {
@@ -13,6 +15,23 @@ export class GitHubClient implements SCMClient {
   constructor(cfg: GitHubConfig) {
     this.config = { ...cfg };
     if (!this.config.baseURL) this.config.baseURL = 'https://api.github.com';
+  }
+
+  async cloneRepo(number: number, targetDir: string): Promise<string> {
+    const url = `${this.config.baseURL}/repos/${this.config.owner}/${this.config.repo}/pulls/${number}`;
+    const resp = await fetch(url, { headers: this.headers() });
+    if (!resp.ok) throw new Error(`unexpected status ${resp.status}`);
+    const pr = (await resp.json()) as { head: { ref: string } };
+    const branch = pr.head.ref;
+
+    const cloneUrl = `git@github.com:${this.config.owner}/${this.config.repo}.git`;
+    execFileSync('git', ['clone', '--depth', '50', '--branch', branch, cloneUrl, targetDir], { stdio: 'pipe' });
+
+    return targetDir;
+  }
+
+  cleanupRepo(dir: string): void {
+    rmSync(dir, { recursive: true, force: true });
   }
 
   private headers(accept?: string): Record<string, string> {

@@ -29,7 +29,7 @@ describe('Budget', () => {
     expect(alloc.systemPrompt).toBe(1000);
     expect(alloc.existingComments).toBeLessThanOrEqual(Math.floor(available * 0.15));
     expect(alloc.existingComments).toBe(500);
-    expect(alloc.memory).toBeLessThanOrEqual(Math.floor(available * 0.10));
+    expect(alloc.memory).toBeLessThanOrEqual(Math.floor(available * 0.1));
     expect(alloc.memory).toBe(200);
   });
 
@@ -44,7 +44,7 @@ describe('Budget', () => {
     const b = new Budget(tok, 100000, 0.75, 4096);
     const available = b.availableInputTokens();
     const alloc = b.allocate(100, 0, 999999, 0);
-    expect(alloc.memory).toBe(Math.floor(available * 0.10));
+    expect(alloc.memory).toBe(Math.floor(available * 0.1));
   });
 
   it('fitsInSingleCall returns true when under budget', () => {

@@ -17,11 +17,18 @@ export interface BitbucketConfig {
 }
 
 export interface ReviewConfig {
+  agentic: boolean;
+  agent: AgentReviewConfig;
   system_prompt: string;
   tone: string;
   context_files: string[];
   guardrails: Guardrails;
   context: ContextConfig;
+}
+
+export interface AgentReviewConfig {
+  allowed_tools: string[];
+  max_turns: number;
 }
 
 export interface ContextConfig {

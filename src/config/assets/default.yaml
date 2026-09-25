@@ -2,6 +2,14 @@ github:
   base_url: https://api.github.com
 
 review:
+  # Env variable to determine if the review is agentic or single LLM API call
+  agentic: true
+  agent: 
+    allowed_tools:
+      - Bash
+      - Read
+    max_turns: default
+    tone: professional
   # Values may be inline text or a file name from prompts/ and tones/.
   system_prompt: default
   tone: diplomatic

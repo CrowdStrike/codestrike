@@ -8,6 +8,9 @@ import { GitHubClient } from './scm/github.js';
 import { BitbucketClient } from './scm/bitbucket.js';
 import { PROVIDER_GITHUB, PROVIDER_BITBUCKET, type PRReference } from './review/parser.js';
 import type { Logger } from './logger.js';
+import { AgentReviewer } from './agent/types.js';
+import { createAgentReviewer } from './agent/factory.js';
+import { AgentConfig, AgentType } from './agent/types.js';
 
 export interface EnvConfig {
   gitHubToken: string;
@@ -24,7 +27,8 @@ export interface EnvConfig {
 
 export interface Dependencies {
   scmClient: SCMClient;
-  llmClient: LLMClient;
+  agenticClient?: AgentReviewer;
+  llmClient?: LLMClient;
   appConfig: Config;
   logger: Logger;
 }
@@ -46,8 +50,17 @@ export function loadEnvConfig(): EnvConfig {
 
 export function wire(envCfg: EnvConfig, appConfig: Config, logger: Logger, ref: PRReference): Dependencies {
   const scmClient = createSCMClient(envCfg, appConfig, ref);
-  const llmClient = buildLLMClient(envCfg);
-  return { scmClient, llmClient, appConfig, logger };
+  if (appConfig.review.agentic) {
+    const agentConfig: AgentConfig = {
+      allowedTools: appConfig.review.agent.allowed_tools,
+      maxTurns: appConfig.review.agent.max_turns,
+    };
+    const agenticClient = createAgentReviewer(AgentType.ClaudeCode, agentConfig, logger);
+    return { scmClient, agenticClient, appConfig, logger };
+  } else {
+    const llmClient = buildLLMClient(envCfg);
+    return { scmClient, llmClient, appConfig, logger };
+  }
 }
 
 export function createSCMClient(envCfg: EnvConfig, appConfig: Config, ref: PRReference): SCMClient {
@@ -62,8 +75,7 @@ export function createSCMClient(envCfg: EnvConfig, appConfig: Config, ref: PRRef
       });
     }
     case PROVIDER_BITBUCKET: {
-      if (!envCfg.bitbucketToken)
-        throw new Error('BITBUCKET_TOKEN environment variable is required for Bitbucket PRs');
+      if (!envCfg.bitbucketToken) throw new Error('BITBUCKET_TOKEN environment variable is required for Bitbucket PRs');
       return new BitbucketClient({
         workspace: ref.owner,
         repoSlug: ref.repo,

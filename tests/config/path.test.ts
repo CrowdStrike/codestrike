@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { resolvePath } from '../../src/config/path.js';
-import * as os from 'os';
-import * as path from 'path';
 
 describe('resolvePath', () => {
   it('returns flag value when provided', () => {

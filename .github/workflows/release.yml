@@ -21,17 +21,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      - name: Set up Node.js and pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-          registry-url: 'https://registry.npmjs.org'
+      - name: Configure npm registry
+        run: echo "//registry.npmjs.org/:_authToken=\${NODE_AUTH_TOKEN}" > ~/.npmrc
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

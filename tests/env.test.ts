@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getEnvString, getEnvBool, getEnvFloat, getEnvInt } from '../src/env.js';
 
 describe('env', () => {

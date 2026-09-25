@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shortVersion, Version, Commit } from '../../src/version.js';
+import { shortVersion, Version } from '../../src/version.js';
 
 describe('version', () => {
   it('shortVersion includes version and commit', () => {

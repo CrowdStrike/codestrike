@@ -30,4 +30,6 @@ export interface SCMClient {
   publishComment(number: number, body: string): Promise<void>;
   getPRComments(number: number): Promise<PRComment[]>;
   getPRReviewComments(number: number): Promise<PRComment[]>;
+  cloneRepo(number: number, targetDir: string): Promise<string>;
+  cleanupRepo(dir: string): void;
 }
