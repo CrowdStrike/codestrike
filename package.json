@@ -1,0 +1,59 @@
+{
+  "name": "codestrike",
+  "version": "0.1.0",
+  "description": "AI-driven pull request review tool",
+  "type": "module",
+  "bin": {
+    "codestrike": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "src/config/assets"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ tests/",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist coverage"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.700.0",
+    "@aws-sdk/credential-providers": "^3.700.0",
+    "commander": "^13.0.0",
+    "dotenv": "^16.4.0",
+    "fastify": "^4.29.0",
+    "openai": "^4.77.0",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "tiktoken": "^1.0.18",
+    "yaml": "^2.7.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT",
+  "author": "CrowdStrike",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CrowdStrike/codestrike.git"
+  }
+}
