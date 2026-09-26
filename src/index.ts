@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { Version, shortVersion } from './version.js';
+import { shortVersion } from './version.js';
 import { reviewCommand } from './cli/review.js';
 import { initCommand } from './cli/init.js';
 import { versionCommand } from './cli/version.js';

@@ -1,3 +1,5 @@
+import * as os from 'os';
+
 export function getEnvString(key: string, defaultValue: string): string {
   return process.env[key] || defaultValue;
 }
@@ -24,7 +26,7 @@ export function getEnvInt(key: string, defaultValue: number): number {
 
 export function getHostname(defaultValue: string): string {
   try {
-    return require('os').hostname();
+    return os.hostname();
   } catch {
     return defaultValue;
   }
