@@ -185,9 +185,7 @@ export class Pipeline {
     });
   }
 
-  private async fetchExistingCommentsContext(
-    prNumber: number,
-  ): Promise<{ ownComments: string; userFeedback: string }> {
+  private async fetchExistingCommentsContext(prNumber: number): Promise<{ ownComments: string; userFeedback: string }> {
     let general: PRComment[];
     try {
       general = await this.client.getPRComments(prNumber);

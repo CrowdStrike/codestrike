@@ -62,8 +62,7 @@ export function createSCMClient(envCfg: EnvConfig, appConfig: Config, ref: PRRef
       });
     }
     case PROVIDER_BITBUCKET: {
-      if (!envCfg.bitbucketToken)
-        throw new Error('BITBUCKET_TOKEN environment variable is required for Bitbucket PRs');
+      if (!envCfg.bitbucketToken) throw new Error('BITBUCKET_TOKEN environment variable is required for Bitbucket PRs');
       return new BitbucketClient({
         workspace: ref.owner,
         repoSlug: ref.repo,
