@@ -1,10 +1,7 @@
-/bin/
-/dist/
-*.out
-*.test
-*.prof
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
 .DS_Store
 *.log
 .env
-.vscode
-codestrike
