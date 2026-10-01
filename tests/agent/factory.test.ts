@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createAgentReviewer } from '../../src/agent/factory.js';
 import { AgentType } from '../../src/agent/types.js';
 import { ClaudeCodeAgentReviewer } from '../../src/agent/claude/claude-code.js';
