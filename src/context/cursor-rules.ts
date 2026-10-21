@@ -44,20 +44,40 @@ export function isUnconditionallyApplicable(fm: CursorRuleFrontmatter): boolean 
   return !(fm.globs ?? '').trim();
 }
 
+/**
+ * Check that candidatePath, after resolving symlinks, stays inside rootDir.
+ * Returns false for broken symlinks, missing files, or any resolution error.
+ */
+function isContainedPath(candidatePath: string, rootDir: string): boolean {
+  try {
+    const realRoot = fs.realpathSync(rootDir);
+    const realCandidate = fs.realpathSync(candidatePath);
+    return realCandidate === realRoot || realCandidate.startsWith(realRoot + path.sep);
+  } catch {
+    return false;
+  }
+}
+
 export function loadCursorContext(repoRoot: string): string {
   let result = '';
 
   try {
     const agentsPath = path.join(repoRoot, 'AGENTS.md');
-    const content = fs.readFileSync(agentsPath, 'utf-8').trim();
-    if (content) {
-      result += `### AGENTS.md\n${content}\n\n`;
+    if (isContainedPath(agentsPath, repoRoot)) {
+      const content = fs.readFileSync(agentsPath, 'utf-8').trim();
+      if (content) {
+        result += `### AGENTS.md\n${content}\n\n`;
+      }
     }
   } catch {
     // file not found, skip
   }
 
   const rulesDir = path.join(repoRoot, '.cursor', 'rules');
+  if (!isContainedPath(rulesDir, repoRoot)) {
+    return result;
+  }
+
   let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(rulesDir, { withFileTypes: true });
@@ -68,9 +88,12 @@ export function loadCursorContext(repoRoot: string): string {
   for (const entry of entries) {
     if (entry.isDirectory() || path.extname(entry.name) !== '.mdc') continue;
 
+    const filePath = path.join(rulesDir, entry.name);
+    if (!isContainedPath(filePath, repoRoot)) continue;
+
     let data: string;
     try {
-      data = fs.readFileSync(path.join(rulesDir, entry.name), 'utf-8');
+      data = fs.readFileSync(filePath, 'utf-8');
     } catch {
       continue;
     }
