@@ -15,9 +15,7 @@ describe('BitbucketClient', () => {
 
   describe('getFileContent', () => {
     it('encodes path segments to prevent path traversal', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response('file content', { status: 200 }),
-      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('file content', { status: 200 }));
 
       await client.getFileContent('%2e%2e/%2e%2e/secret', 'HEAD');
 
@@ -30,9 +28,7 @@ describe('BitbucketClient', () => {
     });
 
     it('encodes the ref parameter', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response('file content', { status: 200 }),
-      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('file content', { status: 200 }));
 
       await client.getFileContent('src/file.ts', 'feature/branch name');
 
@@ -45,24 +41,18 @@ describe('BitbucketClient', () => {
     });
 
     it('preserves normal file paths', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response('file content', { status: 200 }),
-      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('file content', { status: 200 }));
 
       await client.getFileContent('src/main/app.ts', 'main');
 
       const calledUrl = fetchSpy.mock.calls[0][0] as string;
-      expect(calledUrl).toBe(
-        'https://api.bitbucket.org/2.0/repositories/ws/repo/src/main/src/main/app.ts',
-      );
+      expect(calledUrl).toBe('https://api.bitbucket.org/2.0/repositories/ws/repo/src/main/src/main/app.ts');
 
       fetchSpy.mockRestore();
     });
 
     it('defaults ref to HEAD when empty', async () => {
-      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-        new Response('file content', { status: 200 }),
-      );
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('file content', { status: 200 }));
 
       await client.getFileContent('file.ts', '');
 

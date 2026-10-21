@@ -35,7 +35,7 @@ export function serveCommand(): Command {
       const server = createServer(llmClient, appConfig, envCfg, logger);
 
       try {
-        await server.listen({ port, host: host || '127.0.0.1' });
+        await server.listen({ port, host: resolveBindHost(host) });
         logger.info({ addr }, 'server listening');
       } catch (err) {
         logger.error({ err }, 'server error');
@@ -55,9 +55,13 @@ export function serveCommand(): Command {
   return cmd;
 }
 
-function parseAddr(addr: string): [string, string] {
+export function parseAddr(addr: string): [string, string] {
   if (addr.startsWith(':')) return ['', addr.slice(1)];
   const lastColon = addr.lastIndexOf(':');
   if (lastColon === -1) return ['', addr];
   return [addr.slice(0, lastColon), addr.slice(lastColon + 1)];
+}
+
+export function resolveBindHost(host: string): string {
+  return host || '127.0.0.1';
 }

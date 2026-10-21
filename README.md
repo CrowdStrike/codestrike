@@ -159,12 +159,19 @@ pipelines, webhooks, chatbots) to trigger reviews via API:
 ./codestrike serve
 ```
 
-By default the server listens on `:8080`. Override with `--addr` or the
-`HTTP_LISTENING_PORT` environment variable:
+By default the server listens on `127.0.0.1:8080` (loopback only). To expose the
+service on all network interfaces, pass an explicit host with `--addr`:
 
 ```bash
+# Listen on all interfaces
+./codestrike serve --addr 0.0.0.0:8080
+
+# Custom port only (still loopback)
 ./codestrike serve --addr :9090
 ```
+
+Override the default port with `--addr` or the `HTTP_LISTENING_PORT` environment
+variable.
 
 #### Endpoints
 

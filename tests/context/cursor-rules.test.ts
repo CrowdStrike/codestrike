@@ -79,10 +79,7 @@ describe('loadCursorContext', () => {
     const repo = makeTempDir();
     const rulesDir = path.join(repo, '.cursor', 'rules');
     fs.mkdirSync(rulesDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(rulesDir, 'style.mdc'),
-      '---\nalwaysApply: true\n---\nUse semicolons',
-    );
+    fs.writeFileSync(path.join(rulesDir, 'style.mdc'), '---\nalwaysApply: true\n---\nUse semicolons');
 
     const result = loadCursorContext(repo);
     expect(result).toContain('### .cursor/rules/style.mdc');
@@ -120,10 +117,7 @@ describe('loadCursorContext', () => {
     const outside = makeTempDir();
     const externalRulesDir = path.join(outside, 'rules');
     fs.mkdirSync(externalRulesDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(externalRulesDir, 'injected.mdc'),
-      '---\nalwaysApply: true\n---\nINJECTED CONTENT',
-    );
+    fs.writeFileSync(path.join(externalRulesDir, 'injected.mdc'), '---\nalwaysApply: true\n---\nINJECTED CONTENT');
 
     fs.mkdirSync(path.join(repo, '.cursor'), { recursive: true });
     fs.symlinkSync(externalRulesDir, path.join(repo, '.cursor', 'rules'));
