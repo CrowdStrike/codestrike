@@ -35,7 +35,7 @@ export function serveCommand(): Command {
       const server = createServer(llmClient, appConfig, envCfg, logger);
 
       try {
-        await server.listen({ port, host: host || '0.0.0.0' });
+        await server.listen({ port, host: host || '127.0.0.1' });
         logger.info({ addr }, 'server listening');
       } catch (err) {
         logger.error({ err }, 'server error');

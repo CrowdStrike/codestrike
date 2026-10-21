@@ -82,8 +82,9 @@ export class GitHubClient implements SCMClient {
   }
 
   async getFileContent(path: string, ref: string): Promise<string> {
-    let url = `${this.config.baseURL}/repos/${this.config.owner}/${this.config.repo}/contents/${path}`;
-    if (ref) url += `?ref=${ref}`;
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    let url = `${this.config.baseURL}/repos/${this.config.owner}/${this.config.repo}/contents/${encodedPath}`;
+    if (ref) url += `?ref=${encodeURIComponent(ref)}`;
     const resp = await fetch(url, { headers: this.headers('application/vnd.github.v3.raw') });
     if (resp.status === 404) throw new Error(`file "${path}" not found`);
     if (!resp.ok) throw new Error(`unexpected status ${resp.status}`);

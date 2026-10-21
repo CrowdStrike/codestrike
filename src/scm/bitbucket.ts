@@ -79,7 +79,9 @@ export class BitbucketClient implements SCMClient {
 
   async getFileContent(path: string, ref: string): Promise<string> {
     if (!ref) ref = 'HEAD';
-    const url = `${this.config.baseURL}/repositories/${this.config.workspace}/${this.config.repoSlug}/src/${ref}/${path}`;
+    const encodedRef = encodeURIComponent(ref);
+    const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+    const url = `${this.config.baseURL}/repositories/${this.config.workspace}/${this.config.repoSlug}/src/${encodedRef}/${encodedPath}`;
     const resp = await fetch(url, { headers: this.headers() });
     if (resp.status === 404) throw new Error(`file "${path}" not found`);
     if (!resp.ok) throw new Error(`unexpected status ${resp.status}`);
