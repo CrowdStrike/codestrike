@@ -16,7 +16,7 @@ Run the `codestrike` CLI to review a GitHub pull request and post the result as 
 
 Run in the terminal:
 
-    codestrike review <pr-url>
+    npx codestrike review <pr-url>
 
 Optional flags:
 - `--persona <name>` — pick a review persona (e.g. `security`, `critical-strike`). Check `prompts/` next to the codestrike config for available names if unsure, or ask the user.
